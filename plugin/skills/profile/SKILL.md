@@ -6,8 +6,8 @@ allowed-tools: Bash, AskUserQuestion
 
 # Developer Profile
 
-Set up your developer profile to personalise skill and lesson extraction.
-The profile determines which skills are generated and how output is presented.
+Set up your developer profile to personalise skill extraction. Profile determines
+which skills are too basic for your experience level.
 
 ## Finding the MEGA-Code Directory
 
@@ -19,65 +19,33 @@ MEGA_DIR="$(cat ~/.local/mega-code/plugin-root 2>/dev/null || echo $HOME/.claude
 
 Ask the user for their profile using `AskUserQuestion` with these fields:
 
-- **language**: Preferred communication language — common options: `English`, `Korean`, `Thai`
-  (user can type a custom language via "Other")
+- **language**: Preferred communication language — options: `English`, `Korean`, `Thai`
+  (user can also type a custom language via "Other")
 - **level**: `Beginner`, `Intermediate`, or `Expert`
-  (used to filter out skills too basic for their experience level)
-- **style**: `Mentor`, `Formal`, or `Concise`
+- **style**: `Mentor`, `Formal`, or `Concise` (reserved for future use)
 
 After collecting answers, save with:
 
 ```bash
 MEGA_DIR="$(cat ~/.local/mega-code/plugin-root 2>/dev/null || echo $HOME/.claude/mega-code)"
-set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a && \
-  uv run --directory "$MEGA_DIR" python -m mega_code.client.cli profile \
-    --language "<language>" \
-    --level <level> \
-    --style <style>
+uv run --directory "$MEGA_DIR" mega-code profile --language "<language>" --level <level> --style <style>
 ```
 
 ## Show Current Profile
 
 ```bash
 MEGA_DIR="$(cat ~/.local/mega-code/plugin-root 2>/dev/null || echo $HOME/.claude/mega-code)"
-set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a && \
-  uv run --directory "$MEGA_DIR" python -m mega_code.client.cli profile
+uv run --directory "$MEGA_DIR" mega-code profile
 ```
-
-## Update Individual Fields
-
-Any subset of fields can be updated — omitted fields keep their existing values:
-
-```bash
-MEGA_DIR="$(cat ~/.local/mega-code/plugin-root 2>/dev/null || echo $HOME/.claude/mega-code)"
-set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a && \
-  uv run --directory "$MEGA_DIR" python -m mega_code.client.cli profile \
-    --level Expert
-```
-
-### Field Options
-
-| Field | Options |
-|-------|---------|
-| `--language` | Any language string, e.g. `English`, `Thai`, `Korean`, `Japanese` |
-| `--level` | `Beginner`, `Intermediate`, `Expert` |
-| `--style` | `Mentor`, `Formal`, `Concise` |
 
 ## Reset Profile
 
-Remove all profile settings and revert to defaults:
-
 ```bash
 MEGA_DIR="$(cat ~/.local/mega-code/plugin-root 2>/dev/null || echo $HOME/.claude/mega-code)"
-set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a && \
-  uv run --directory "$MEGA_DIR" python -m mega_code.client.cli profile --reset
+uv run --directory "$MEGA_DIR" mega-code profile --reset
 ```
 
 ## Profile Storage
 
-Profile is stored at: `~/.local/mega-code/profile.json`
-
-Applied automatically during pipeline runs to:
-- Filter out skills too basic for the user's experience level
-- Personalise generated lessons, skills, and strategies
-- Adapt communication language and style
+Profile is stored at `~/.local/mega-code/profile.json` and used by the pipeline
+to filter out skills too basic for the user's experience level.
