@@ -61,7 +61,6 @@ The `--model` flag for `/mega-code:run` accepts any model alias supported by the
 |-------|----------|
 | `gemini-3-flash` | Google (default) |
 | `gpt-5-mini` | OpenAI |
-| `claude-sonnet-4-5` | Anthropic |
 
 ## Tips
 
