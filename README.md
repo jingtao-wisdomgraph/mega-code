@@ -5,19 +5,16 @@ reusable skills, and optimizes AI workflows.
 
 ## Quick Start
 
-### Install as a Claude Code plugin
+### Install via Claude Code Plugin Marketplace
 
-```bash
-# Clone the repository
-git clone https://github.com/wisdomgraph/mega-code.git
-cd mega-code
+Inside a Claude Code session, run:
 
-# Install dependencies
-uv sync
-
-# Test the plugin with Claude Code
-claude --plugin-dir .
 ```
+/plugin marketplace add git@bitbucket.org:mindai/mega-code-oss.git
+/plugin install mega-code@mindai-mega-code-oss
+```
+
+That's it — the plugin's slash commands are immediately available.
 
 ### Available Slash Commands
 
@@ -50,7 +47,7 @@ as a submodule), use the sync script to test changes without committing:
 bash scripts/setup-oss-test.sh
 
 # This syncs skills/, hooks/, client code, and installs deps.
-# Then test with:
+# Then test locally with:
 claude --plugin-dir mega-code-oss
 ```
 
