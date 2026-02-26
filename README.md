@@ -24,7 +24,7 @@ That's it — the plugin's slash commands are immediately available.
 
 ### First Steps After Install
 
-Sign in to MEGA-Code to get an API key:
+**Step 1 — Sign in:**
 
 ```
 /mega-code:login
@@ -32,6 +32,20 @@ Sign in to MEGA-Code to get an API key:
 
 This opens a browser-based OAuth flow (GitHub or Google). Once signed in,
 your API key is saved automatically.
+
+**Step 2 — Add your own LLM API key (required):**
+
+MEGA-Code uses a **Bring Your Own Key (BYOK)** model — you supply your own
+OpenAI or Gemini key. The server never holds platform-level credentials.
+
+Visit the web UI and add your key under **Account → API Keys**:
+
+👉 **[https://internal-dev.megacode.ai](https://internal-dev.megacode.ai)**
+
+Supported providers: **OpenAI** (`OPENAI_API_KEY`) and **Google Gemini** (`GEMINI_API_KEY`).
+
+> Without a key registered, `/mega-code:run` will prompt you to add one at
+> [https://internal-dev.megacode.ai](https://internal-dev.megacode.ai).
 
 ### Available Slash Commands
 
