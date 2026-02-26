@@ -11,7 +11,7 @@ Inside a Claude Code session, run:
 
 ```
 /plugin marketplace add git@bitbucket.org:mindai/mega-code-oss.git
-/plugin install mega-code@mindai-mega-code-oss
+/plugin install mega-code@wisdomgraph-mega-code
 ```
 
 That's it — the plugin's slash commands are immediately available.
