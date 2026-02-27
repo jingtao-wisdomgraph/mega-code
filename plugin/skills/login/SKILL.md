@@ -55,8 +55,11 @@ Polls every 3s, times out after 10 minutes.
 
 ## Verify
 
+Do **not** print the raw API key — mask it to avoid exposing credentials in output or logs.
+
 ```bash
-grep -E "MEGA_CODE_(API_KEY|CLIENT_MODE|SERVER_URL)" "$MEGA_DIR/.env"
+grep -E "MEGA_CODE_(API_KEY|CLIENT_MODE|SERVER_URL)" "$MEGA_DIR/.env" \
+  | sed 's/\(MEGA_CODE_API_KEY=.\{6\}\).*/\1***/'
 ```
 
 ## Troubleshooting

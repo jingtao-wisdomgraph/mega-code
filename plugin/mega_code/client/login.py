@@ -314,9 +314,6 @@ def run_login(
     # Step 3: Save API key to .env
     env_path, env_vars = _save_api_key(api_key, base_url)
 
-    if old_key := env_vars.get("MEGA_CODE_API_KEY"):
-        print(f"\nReplacing existing API key ({old_key[:6]}***)")
-
     print()
     print("Login successful!")
     print(f"API key saved to: {env_path}")
