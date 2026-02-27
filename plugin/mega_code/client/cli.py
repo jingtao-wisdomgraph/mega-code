@@ -263,6 +263,11 @@ def cmd_profile(args: argparse.Namespace) -> int:
     from mega_code.client.api.protocol import UserProfile
     from mega_code.client.profile import load_profile
 
+    # Load .env into os.environ so create_client() can find MEGA_CODE_API_KEY etc.
+    env_vars = load_env_file(get_env_path())
+    for key, value in env_vars.items():
+        os.environ.setdefault(key, value)
+
     # Reset
     if args.reset:
         # Clear local file
