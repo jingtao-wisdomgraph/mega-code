@@ -1,6 +1,6 @@
 [project]
 name = "mega-code"
-version = "1.0.4"
+version = "1.0.0"
 description = "Open-source Claude Code plugin — collect interaction data, extract skills, and optimize AI workflows"
 readme = "README.md"
 requires-python = ">=3.10,<3.14"
@@ -31,7 +31,7 @@ parquet = ["pyarrow>=12.0"]
 telemetry = ["opentelemetry-api>=1.20.0", "opentelemetry-sdk>=1.20.0"]
 
 [project.urls]
-Homepage = "https://internal-dev.megacode.ai"
+Homepage = "https://www.megacode.ai"
 Repository = "https://github.com/wisdomgraph/mega-code"
 
 [project.scripts]

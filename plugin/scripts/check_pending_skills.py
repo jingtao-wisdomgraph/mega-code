@@ -23,10 +23,15 @@ sys.path.insert(0, str(project_root))
 
 import dotenv  # noqa: E402
 
-# Load .env from repo root (relative to this script)
+# 1. Stable credential store (~/.local/mega-code/.env) — always loaded first
+_stable_env = Path.home() / ".local" / "mega-code" / ".env"
+if _stable_env.exists():
+    dotenv.load_dotenv(_stable_env, override=False)
+
+# 2. Repo root .env — dev overlay (lower priority than stable credentials)
 _env_path = project_root / ".env"
 if _env_path.exists():
-    dotenv.load_dotenv(_env_path, override=True)
+    dotenv.load_dotenv(_env_path, override=False)
 
 from mega_code.client.pending import (  # noqa: E402
     format_review_notification,

@@ -1,6 +1,6 @@
 ---
 description: Run the MEGA-Code skill extraction pipeline to analyze Claude Code sessions and generate reusable skills and strategies.
-argument-hint: [--project [@<name>]] [--model <model>] [--include-claude] [--include-codex] [--include-all]
+argument-hint: [--project [@<name>]] [--model <model>] [--include-claude] [--include-codex] [--include-all] [--poll-timeout <seconds>]
 allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 disable-model-invocation: true
 ---
@@ -42,6 +42,7 @@ All commands below assume `MEGA_DIR` is set.
 | `--include-claude` | Include claude.jsonl conversations |
 | `--include-codex` | Include opencode.jsonl conversations |
 | `--include-all` | All conversation sources |
+| `--poll-timeout <seconds>` | Max seconds to poll for completion (default: 1200 = 20 min; 0 = indefinite) |
 
 Flags combine freely (e.g., `--project --include-claude --include-codex`).
 
@@ -50,10 +51,14 @@ Flags combine freely (e.g., `--project --include-claude --include-codex`).
 
 ## Running the Pipeline
 
+All variables must be in **one single Bash call** so `$LOG` and `$MEGA_DIR` stay in scope:
+
 ```bash
-LOG="/tmp/mega-code-run-$(date +%Y%m%d-%H%M%S).log"
-echo "MEGA-Code pipeline log: $LOG"
-export CLAUDE_PROJECT_DIR="$PWD" && set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a && \
+LOG="/tmp/mega-code-run-$(date +%Y%m%d-%H%M%S).log" && \
+  echo "Pipeline log: $LOG" && \
+  export CLAUDE_PROJECT_DIR="$PWD" && \
+  [ -f "${HOME}/.local/mega-code/.env" ] && set -a && . "${HOME}/.local/mega-code/.env" && set +a ; \
+  set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a && \
   uv run --directory "$MEGA_DIR" python scripts/run_pipeline_async.py [FLAGS] 2>&1 | tee "$LOG"
 ```
 

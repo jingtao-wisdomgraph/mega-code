@@ -707,6 +707,7 @@ Run this command EXACTLY as shown (do NOT change imports):
 
 ```bash
 MEGA_DIR=$(cat ~/.local/mega-code/plugin-root 2>/dev/null || echo ~/.claude/mega-code)
+[ -f "${HOME}/.local/mega-code/.env" ] && set -a && . "${HOME}/.local/mega-code/.env" && set +a
 cd "$MEGA_DIR" && set -a && . ./.env && set +a && uv run python -c "
 # IMPORTANT: archive_pending_items is in feedback module, NOT pending module
 from mega_code.client.feedback import archive_pending_items
@@ -759,6 +760,7 @@ After collecting answers, save feedback:
 
 ```bash
 MEGA_DIR=$(cat ~/.local/mega-code/plugin-root 2>/dev/null || echo ~/.claude/mega-code)
+[ -f "${HOME}/.local/mega-code/.env" ] && set -a && . "${HOME}/.local/mega-code/.env" && set +a
 cd "$MEGA_DIR" && set -a && . ./.env && set +a && \
   uv run python -m mega_code.client.feedback_cli \
   --run-id '{run_id}' \

@@ -15,7 +15,7 @@ endpoints. Supports two modes:
 
 Environment variables:
   MEGA_SERVICE_URL -- mega-service API base URL
-                     (default: https://internal-dev.megacode.ai/api/mega-service/v1)
+                     (default: https://console.megacode.ai/api/mega-service/v1)
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ from mega_code.client.cli import get_env_path, load_env_file, save_env_file
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_MEGA_SERVICE_URL = "https://internal-dev.megacode.ai/api/mega-service/v1"
+_DEFAULT_MEGA_SERVICE_URL = "https://console.megacode.ai/api/mega-service/v1"
 _DEFAULT_PROVIDER = "google"
 _POLL_INTERVAL_SECONDS = 3
 _POLL_TIMEOUT_SECONDS = 600  # 10 minutes, matches server-side expiry

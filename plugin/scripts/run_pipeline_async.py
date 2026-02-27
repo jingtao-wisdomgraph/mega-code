@@ -65,12 +65,18 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# Load environment variables from repo root (relative to this script)
+# Load environment variables
 import dotenv  # noqa: E402
 
+# 1. Stable credential store (~/.local/mega-code/.env) — always loaded first
+_stable_env = Path.home() / ".local" / "mega-code" / ".env"
+if _stable_env.exists():
+    dotenv.load_dotenv(_stable_env, override=False)
+
+# 2. Repo root .env — dev overlay (lower priority than stable credentials)
 _env_path = project_root / ".env"
 if _env_path.exists():
-    dotenv.load_dotenv(_env_path, override=True)
+    dotenv.load_dotenv(_env_path, override=False)
 
 # All imports are from mega_code.client.* — no enterprise pipeline dependencies.
 from mega_code.client.api import create_client  # noqa: E402
