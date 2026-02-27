@@ -458,17 +458,9 @@ async def main():
             elif resolved_project_path:
                 trigger_kwargs["project_path"] = resolved_project_path
 
-            # Trigger pipeline
-            logger.info("Triggering pipeline via client...")
-            trigger_result = await client.trigger_pipeline_run(**trigger_kwargs)
-            run_id = trigger_result.run_id
-            logger.info(f"Pipeline triggered: run_id={run_id}, status={trigger_result.status}")
-
-            # Validate CLI arg
+            # Validate and resolve poll timeout before triggering (fail fast)
             if args.poll_timeout is not None and args.poll_timeout < 0:
                 raise ValueError(f"--poll-timeout must be >= 0, got {args.poll_timeout}")
-
-            # Resolve poll timeout: 0 means indefinite (None)
             if args.poll_timeout is not None:
                 _raw = args.poll_timeout
             else:
@@ -486,6 +478,12 @@ async def main():
                 logger.info("Poll timeout: indefinite (waiting until pipeline completes)")
             else:
                 logger.info("Poll timeout: %.0fs (%.0f min)", poll_timeout, poll_timeout / 60)
+
+            # Trigger pipeline
+            logger.info("Triggering pipeline via client...")
+            trigger_result = await client.trigger_pipeline_run(**trigger_kwargs)
+            run_id = trigger_result.run_id
+            logger.info(f"Pipeline triggered: run_id={run_id}, status={trigger_result.status}")
 
             # Poll for completion
             status = await poll_pipeline_status(client, run_id, timeout=poll_timeout)

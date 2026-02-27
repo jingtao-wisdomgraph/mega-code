@@ -274,11 +274,18 @@ def cmd_profile(args: argparse.Namespace) -> int:
     if args.reset:
         # Clear local file
         profile_path = get_profile_path()
-        if profile_path.exists():
+        profile_existed = profile_path.exists()
+        if profile_existed:
             profile_path.unlink()
-        # Save empty profile via client (remote mode pushes to mega-service DB)
-        client.save_profile(profile=UserProfile())
-        print("Profile reset.")
+        # Sync to remote server only — local mode handles reset via file deletion above
+        from mega_code.client.api.remote import MegaCodeRemote
+
+        if isinstance(client, MegaCodeRemote):
+            client.save_profile(profile=UserProfile())
+        if profile_existed:
+            print("Profile reset.")
+        else:
+            print("No profile to reset.")
         return 0
 
     has_updates = any(x is not None for x in [args.language, args.level, args.style])

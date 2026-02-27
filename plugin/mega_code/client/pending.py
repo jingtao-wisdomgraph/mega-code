@@ -451,11 +451,11 @@ async def poll_pipeline_status(
     last_phase = ""
     consecutive_errors = 0
 
-    def _should_retry(label: str) -> bool:
-        """Increment error counter, log, return True if retry budget remains."""
+    def _retry_wait(label: str) -> float | None:
+        """Increment error counter, log warning, return wait seconds or None if budget exhausted."""
         nonlocal consecutive_errors
         if consecutive_errors >= max_retries:
-            return False
+            return None
         consecutive_errors += 1
         wait = min(poll_interval * (2**consecutive_errors), 120.0)
         logger.warning(
@@ -465,7 +465,7 @@ async def poll_pipeline_status(
             max_retries,
             wait,
         )
-        return True
+        return wait
 
     while True:
         try:
@@ -474,14 +474,17 @@ async def poll_pipeline_status(
 
         except httpx.HTTPStatusError as exc:
             code = exc.response.status_code
-            if code in (502, 503, 504) and _should_retry(f"Status poll got HTTP {code}"):
-                await asyncio.sleep(min(poll_interval * (2**consecutive_errors), 120.0))
-                continue
+            if code in (502, 503, 504):
+                wait = _retry_wait(f"Status poll got HTTP {code}")
+                if wait is not None:
+                    await asyncio.sleep(wait)
+                    continue
             raise  # non-retryable status or max retries exhausted
 
         except (httpx.NetworkError, httpx.TimeoutException) as exc:
-            if _should_retry(f"Network error ({type(exc).__name__})"):
-                await asyncio.sleep(min(poll_interval * (2**consecutive_errors), 120.0))
+            wait = _retry_wait(f"Network error ({type(exc).__name__})")
+            if wait is not None:
+                await asyncio.sleep(wait)
                 continue
             raise
 
