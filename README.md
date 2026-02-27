@@ -11,7 +11,7 @@ Inside a Claude Code session, run:
 
 ```
 /plugin marketplace add git@bitbucket.org:mindai/mega-code-oss.git
-/plugin install mega-code@wisdomgraph-mega-code
+/plugin install mega-code@mind-ai-mega-code
 ```
 
 That's it — the plugin's slash commands are immediately available.
@@ -19,7 +19,7 @@ That's it — the plugin's slash commands are immediately available.
 ### Update to Latest Version
 
 ```
-/plugin marketplace update wisdomgraph-mega-code
+/plugin marketplace update mind-ai-mega-code
 ```
 
 ### First Steps After Install
@@ -40,12 +40,12 @@ OpenAI or Gemini key. The server never holds platform-level credentials.
 
 Visit the web UI and add your key under **Account → API Keys**:
 
-👉 **[https://internal-dev.megacode.ai](https://internal-dev.megacode.ai)**
+👉 **[https://megacode.ai](https://megacode.ai)**
 
 Supported providers: **OpenAI** (`OPENAI_API_KEY`) and **Google Gemini** (`GEMINI_API_KEY`).
 
 > Without a key registered, `/mega-code:run` will prompt you to add one at
-> [https://internal-dev.megacode.ai](https://internal-dev.megacode.ai).
+> [https://megacode.ai](https://megacode.ai).
 
 ### Available Slash Commands
 
