@@ -13,11 +13,12 @@ and learned rules that can be saved as reusable skills.
 
 ## ⚠️ Important: Pipeline is Long-Running
 
-The pipeline command runs as a **background process and may take a long time**:
+The pipeline command **blocks until the server finishes processing**. The server
+runs the pipeline asynchronously and this client polls for completion.
 
-**DO NOT terminate or interrupt the background command.** It will print results
-when done. Silence with no new output for several minutes is **completely normal**
-during LLM inference (especially with `gpt-5-mini` or other reasoning models).
+**DO NOT interrupt the command (Ctrl+C) while it is running.** Silence with no
+new output for several minutes is **completely normal** during LLM inference
+(especially with `gpt-5-mini` or other reasoning models).
 
 The default poll timeout is **20 minutes**. For longer runs, use `--poll-timeout`:
 - `--poll-timeout 3600` — wait up to 1 hour

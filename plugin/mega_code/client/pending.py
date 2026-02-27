@@ -22,6 +22,8 @@ import logging
 import re
 import shutil
 import time
+
+import httpx
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -417,49 +419,93 @@ def delete_pending_item(path: Path) -> bool:
 async def poll_pipeline_status(
     client: MegaCodeBaseClient,
     run_id: str,
-    poll_interval: float = 5.0,
-    timeout: float = 600.0,
+    poll_interval: float = 10.0,
+    timeout: float | None = 1200.0,
+    max_retries: int = 5,
 ) -> PipelineStatusResult:
     """Poll client.get_pipeline_status() until completed/failed or timeout.
 
     For MegaCodeLocal: returns immediately (status is already 'completed').
-    For MegaCodeRemote: polls server every poll_interval seconds.
+    For MegaCodeRemote: polls server every poll_interval seconds with retry
+    on transient HTTP errors (502/503/504) and network failures.
 
     Args:
         client: MegaCodeBaseClient implementation.
         run_id: Pipeline run identifier.
-        poll_interval: Seconds between polls.
-        timeout: Maximum seconds to wait.
+        poll_interval: Seconds between polls (default: 10s).
+        timeout: Maximum seconds to wait. None means wait indefinitely
+            until the pipeline completes or fails (default: 1200s = 20 min).
+        max_retries: Max consecutive retries on transient errors before
+            raising. Uses exponential backoff capped at 120s (default: 5).
 
     Returns:
         PipelineStatusResult with final status.
 
     Raises:
-        TimeoutError: If pipeline doesn't finish within timeout.
+        TimeoutError: If pipeline doesn't finish within timeout (when set).
+        httpx.HTTPStatusError: On non-retryable HTTP errors or after
+            max_retries consecutive transient errors.
+        httpx.NetworkError: After max_retries consecutive network failures.
     """
-    start = time.time()
+    start = time.monotonic()
     last_phase = ""
+    consecutive_errors = 0
+
+    def _should_retry(label: str) -> bool:
+        """Increment error counter, log, return True if retry budget remains."""
+        nonlocal consecutive_errors
+        if consecutive_errors >= max_retries:
+            return False
+        consecutive_errors += 1
+        wait = min(poll_interval * (2**consecutive_errors), 120.0)
+        logger.warning(
+            "  %s (attempt %d/%d), retrying in %.0fs...",
+            label,
+            consecutive_errors,
+            max_retries,
+            wait,
+        )
+        return True
 
     while True:
-        status = client.get_pipeline_status(run_id=run_id)
+        try:
+            status = await asyncio.to_thread(client.get_pipeline_status, run_id=run_id)
+            consecutive_errors = 0  # reset on success
+
+        except httpx.HTTPStatusError as exc:
+            code = exc.response.status_code
+            if code in (502, 503, 504) and _should_retry(f"Status poll got HTTP {code}"):
+                await asyncio.sleep(min(poll_interval * (2**consecutive_errors), 120.0))
+                continue
+            raise  # non-retryable status or max retries exhausted
+
+        except (httpx.NetworkError, httpx.TimeoutException) as exc:
+            if _should_retry(f"Network error ({type(exc).__name__})"):
+                await asyncio.sleep(min(poll_interval * (2**consecutive_errors), 120.0))
+                continue
+            raise
 
         if status.status in ("completed", "failed"):
             return status
 
-        elapsed = time.time() - start
-        if elapsed > timeout:
-            raise TimeoutError(f"Pipeline timed out after {timeout}s (run_id={run_id})")
-
-        # Log progress
+        # Log progress on phase change
         if status.progress:
             phase = status.progress.get("current_phase", "")
             processed = status.progress.get("sessions_processed", 0)
             total = status.progress.get("sessions_total", 0)
-            if phase != last_phase:
-                logger.info(f"  Progress: {phase} ({processed}/{total})")
+            if phase and phase != last_phase:
+                logger.info("  Progress: %s (%d/%d)", phase, processed, total)
                 last_phase = phase
 
-        await asyncio.sleep(poll_interval)
+        # Sleep before next poll; respect remaining timeout to avoid overshoot
+        if timeout is not None:
+            elapsed = time.monotonic() - start
+            remaining = timeout - elapsed
+            if remaining <= 0:
+                raise TimeoutError(f"Pipeline timed out after {timeout:.0f}s (run_id={run_id})")
+            await asyncio.sleep(min(poll_interval, remaining))
+        else:
+            await asyncio.sleep(poll_interval)
 
 
 # =============================================================================

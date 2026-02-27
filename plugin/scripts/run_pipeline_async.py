@@ -336,6 +336,17 @@ Project argument formats:
         help="Include sessions from all sources (Claude + Codex + future integrations)",
     )
     parser.add_argument(
+        "--poll-timeout",
+        type=int,
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Max seconds to wait for pipeline completion (default: 1200 = 20 min). "
+            "Pass 0 to wait indefinitely until the pipeline finishes. "
+            "Also reads MEGA_CODE_POLL_TIMEOUT env var."
+        ),
+    )
+    parser.add_argument(
         "--env-debug",
         action="store_true",
         help="Print key environment variables and exit",
@@ -453,8 +464,31 @@ async def main():
             run_id = trigger_result.run_id
             logger.info(f"Pipeline triggered: run_id={run_id}, status={trigger_result.status}")
 
+            # Validate CLI arg
+            if args.poll_timeout is not None and args.poll_timeout < 0:
+                raise ValueError(f"--poll-timeout must be >= 0, got {args.poll_timeout}")
+
+            # Resolve poll timeout: 0 means indefinite (None)
+            if args.poll_timeout is not None:
+                _raw = args.poll_timeout
+            else:
+                env_val = os.environ.get("MEGA_CODE_POLL_TIMEOUT", "1200")
+                try:
+                    _raw = int(env_val)
+                except ValueError:
+                    logger.warning(
+                        "Invalid MEGA_CODE_POLL_TIMEOUT=%r (must be integer); using default 1200",
+                        env_val,
+                    )
+                    _raw = 1200
+            poll_timeout: float | None = None if _raw == 0 else float(_raw)
+            if poll_timeout is None:
+                logger.info("Poll timeout: indefinite (waiting until pipeline completes)")
+            else:
+                logger.info("Poll timeout: %.0fs (%.0f min)", poll_timeout, poll_timeout / 60)
+
             # Poll for completion
-            status = await poll_pipeline_status(client, run_id)
+            status = await poll_pipeline_status(client, run_id, timeout=poll_timeout)
 
             if status.status == "failed":
                 error_msg = status.error or "Unknown error"
