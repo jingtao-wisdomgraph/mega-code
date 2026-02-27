@@ -20,7 +20,7 @@
       },
       "category": "productivity",
       "tags": ["optimization", "skills", "data-collection", "analytics"],
-      "homepage": "https://megacode.ai",
+      "homepage": "https://internal-dev.megacode.ai",
       "repository": "https://github.com/wisdomgraph/mega-code",
       "license": "Apache-2.0"
     }

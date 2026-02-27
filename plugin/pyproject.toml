@@ -31,7 +31,7 @@ parquet = ["pyarrow>=12.0"]
 telemetry = ["opentelemetry-api>=1.20.0", "opentelemetry-sdk>=1.20.0"]
 
 [project.urls]
-Homepage = "https://megacode.ai"
+Homepage = "https://internal-dev.megacode.ai"
 Repository = "https://github.com/wisdomgraph/mega-code"
 
 [project.scripts]

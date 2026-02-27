@@ -89,8 +89,10 @@ from mega_code.client.utils.tracing import get_tracer, setup_tracing  # noqa: E4
 
 logger = logging.getLogger(__name__)
 
-# Default model for pipeline execution via /mega-code:run
-DEFAULT_PIPELINE_MODEL = "gemini-3-flash"
+# No client-side default model — let the server pick based on the user's configured
+# BYOK keys (priority: OpenAI > Anthropic > Gemini via resolve_default_model_for_keys).
+# Only set a model here when the user explicitly passes --model.
+DEFAULT_PIPELINE_MODEL = None
 
 NO_OUTPUTS_NOTIFICATION = """
 \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557
@@ -388,8 +390,11 @@ async def main():
     setup_tracing(service_name="mega-code-client")
     tracer = get_tracer(__name__)
 
-    model_name = args.model or DEFAULT_PIPELINE_MODEL
-    logger.info(f"Using model: {model_name}")
+    model_name = args.model  # None → server picks best model from user's BYOK keys
+    if model_name:
+        logger.info(f"Using model: {model_name}")
+    else:
+        logger.info("Model not specified — server will select based on configured LLM keys")
 
     # Resolve include flags
     include_claude = args.include_claude or args.include_all
