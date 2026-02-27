@@ -58,19 +58,40 @@ def _get_plugin_root() -> Path | None:
 
 
 def get_env_path() -> Path:
-    """Get the path to the .env file.
+    """Get the path to the stable .env credential file.
+
+    Credentials live in ~/.local/mega-code/.env — a fixed, version-independent
+    location that survives plugin updates (following the same pattern as AWS CLI
+    ~/.aws/credentials, gh ~/.config/gh/hosts.yml, etc.).
 
     Priority:
-    1. Plugin root (marketplace install) has .env
-    2. Fallback to script's repo root (dev mode)
+    1. ~/.local/mega-code/.env  (stable path — always preferred for installs)
+       • If it already exists, return it immediately.
+       • If it doesn't exist yet, check whether the legacy versioned plugin .env
+         has credentials and silently migrate them here (one-time migration).
+    2. Repo root .env  (dev mode only — when no plugin root is discoverable)
     """
+    stable_path = _get_mega_code_data_root() / ".env"
+
+    if stable_path.exists():
+        return stable_path
+
+    # Not created yet — try a one-time migration from the old versioned location.
     plugin_root = _get_plugin_root()
     if plugin_root:
-        env_path = plugin_root / ".env"
-        if env_path.exists():
-            return env_path
+        legacy_env = plugin_root / ".env"
+        if legacy_env.exists():
+            legacy_vars = load_env_file(legacy_env)
+            if legacy_vars.get("MEGA_CODE_API_KEY"):
+                # Migrate credentials to the stable path and return it.
+                stable_path.parent.mkdir(parents=True, exist_ok=True)
+                save_env_file(stable_path, legacy_vars)
+                return stable_path
+        # Plugin is installed but no credentials yet — new writes go to stable path.
+        stable_path.parent.mkdir(parents=True, exist_ok=True)
+        return stable_path
 
-    # Fallback to current script's repo root
+    # Dev mode: no plugin root found — fall back to the repo root .env.
     source_dir = Path(__file__).parent.parent.resolve()
     return source_dir / ".env"
 

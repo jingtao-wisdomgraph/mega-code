@@ -369,25 +369,36 @@ def _upload_trajectory(session_id: str, project_dir: str | None) -> None:
 
 
 def _load_env():
-    """Load .env from the plugin/repo root.
+    """Load credentials from the stable data-root .env, then overlay plugin .env.
+
+    Credentials are stored in ~/.local/mega-code/.env (a fixed, version-independent
+    path that survives plugin updates).  The versioned plugin .env may still hold
+    non-secret overrides (e.g. MEGA_SERVICE_URL for dev/staging).
 
     Search order:
-    1. CLAUDE_PLUGIN_ROOT (set by Claude Code during hook execution)
-    2. Repo root (three levels up from client/collector.py — for dev mode)
+    1. ~/.local/mega-code/.env  — stable credential store (always loaded first)
+    2. CLAUDE_PLUGIN_ROOT/.env  — versioned plugin dir (loaded after, so it can
+       override non-secret config without clobbering credentials)
+    3. Repo root .env           — dev mode fallback
     """
-    # Marketplace install: plugin root has .env at its top level
+    # 1. Stable credential store (survives plugin updates)
+    stable_env = Path.home() / ".local" / "mega-code" / ".env"
+    if stable_env.exists():
+        dotenv.load_dotenv(stable_env, override=False)  # don't override existing env vars
+
+    # 2. Versioned plugin dir (may add non-secret config on top)
     plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
     if plugin_root:
-        env_path = Path(plugin_root) / ".env"
-        if env_path.exists():
-            dotenv.load_dotenv(env_path, override=True)
-            return
+        plugin_env = Path(plugin_root) / ".env"
+        if plugin_env.exists():
+            dotenv.load_dotenv(plugin_env, override=False)
+        return  # we're in a marketplace install — skip dev fallback
 
-    # Dev mode: repo root is three parents up from mega_code/client/collector.py
+    # 3. Dev mode: repo root is three parents up from mega_code/client/collector.py
     repo_root = Path(__file__).resolve().parent.parent.parent
-    env_path = repo_root / ".env"
-    if env_path.exists():
-        dotenv.load_dotenv(env_path, override=True)
+    dev_env = repo_root / ".env"
+    if dev_env.exists():
+        dotenv.load_dotenv(dev_env, override=False)
 
 
 def main():

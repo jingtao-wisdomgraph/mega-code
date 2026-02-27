@@ -47,7 +47,21 @@ if [ ! -f "$DATA_DIR/profile.json" ]; then
 EOF
 fi
 
-# ── 4. Ensure .env exists (zsh returns 127 when sourcing a missing file) ──
+# ── 4. Ensure stable credential store exists ──────────────────────────
+# Credentials live in ~/.local/mega-code/.env (version-independent, survives
+# plugin updates — same pattern as AWS ~/.aws/credentials, gh ~/.config/gh/).
+# The versioned plugin .env is kept as a non-secret config overlay only.
+if [ ! -f "$DATA_DIR/.env" ]; then
+    # One-time migration: copy credentials from old versioned location if present.
+    if [ -f "$MEGA_DIR/.env" ] && grep -q "MEGA_CODE_API_KEY" "$MEGA_DIR/.env" 2>/dev/null; then
+        cp "$MEGA_DIR/.env" "$DATA_DIR/.env"
+        chmod 0600 "$DATA_DIR/.env"
+    else
+        touch "$DATA_DIR/.env"
+        chmod 0600 "$DATA_DIR/.env"
+    fi
+fi
+# Ensure the plugin dir still has a (possibly empty) .env so sourcing it is safe.
 if [ ! -f "$MEGA_DIR/.env" ]; then
     touch "$MEGA_DIR/.env"
 fi

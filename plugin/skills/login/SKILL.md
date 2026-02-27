@@ -47,7 +47,7 @@ set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a && \
 Replace `CLIENT_ID` and `BASE_URL` with values from Step 1.
 Run this **in the background** so the user is not blocked.
 
-On success, saves to the plugin `.env`:
+On success, saves to `~/.local/mega-code/.env` (stable, version-independent):
 - `MEGA_CODE_API_KEY`, `MEGA_CODE_CLIENT_MODE=remote`, `MEGA_CODE_SERVER_URL`
 - Prints "Login successful!" and exits
 
@@ -55,15 +55,16 @@ Polls every 3s, times out after 10 minutes.
 
 ## Verify
 
-Do **not** print the raw API key — mask it to avoid exposing credentials in output or logs.
+Credentials are stored in the stable data directory, not the versioned plugin dir.
+Do **not** print the raw API key — mask it.
 
 ```bash
-grep -E "MEGA_CODE_(API_KEY|CLIENT_MODE|SERVER_URL)" "$MEGA_DIR/.env" \
+grep -E "MEGA_CODE_(API_KEY|CLIENT_MODE|SERVER_URL)" "$HOME/.local/mega-code/.env" \
   | sed 's/\(MEGA_CODE_API_KEY=.\{6\}\).*/\1***/'
 ```
 
 ## Troubleshooting
 
 - **Timeout**: Session expires after 10 min. Re-run the command.
-- **Connection error**: Check `MEGA_SERVICE_URL` in `.env`.
+- **Connection error**: Check `MEGA_SERVICE_URL` in `~/.local/mega-code/.env`.
 - **Already logged in**: Running login again replaces the existing key.
