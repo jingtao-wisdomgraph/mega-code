@@ -1,13 +1,20 @@
 {
   "name": "mega-code",
   "description": "AI optimization data collector and skill extractor for Claude Code - captures trajectories, extracts reusable skills, and optimizes AI workflows",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "author": {
-    "name": "WisdomGraph",
+    "name": "Mind AI",
     "email": "support@megacode.ai"
   },
   "homepage": "https://internal-dev.megacode.ai",
   "repository": "https://github.com/wisdomgraph/mega-code",
-  "license": "MIT",
-  "keywords": ["mega", "optimization", "skills", "data-collection", "analytics", "trajectories"]
+  "license": "Apache-2.0",
+  "keywords": [
+    "mega",
+    "optimization",
+    "skills",
+    "data-collection",
+    "analytics",
+    "trajectories"
+  ]
 }

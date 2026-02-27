@@ -1,8 +1,8 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "wisdomgraph-mega-code",
+  "name": "mind-ai-mega-code",
   "owner": {
-    "name": "WisdomGraph",
+    "name": "Mind AI",
     "email": "support@megacode.ai"
   },
   "metadata": {
@@ -13,14 +13,19 @@
       "name": "mega-code",
       "source": "./plugin",
       "description": "Collect interaction data, extract reusable skills, and optimize AI workflows with MEGA-Code",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "author": {
-        "name": "WisdomGraph",
+        "name": "Mind AI",
         "email": "support@megacode.ai"
       },
       "category": "productivity",
-      "tags": ["optimization", "skills", "data-collection", "analytics"],
-      "homepage": "https://internal-dev.megacode.ai",
+      "tags": [
+        "optimization",
+        "skills",
+        "data-collection",
+        "analytics"
+      ],
+      "homepage": "https://megacode.ai",
       "repository": "https://github.com/wisdomgraph/mega-code",
       "license": "Apache-2.0"
     }
