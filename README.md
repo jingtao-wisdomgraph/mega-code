@@ -1,4 +1,4 @@
-# MEGA-Code (Open Source Edition)
+# MEGA-Code 1.0.0-beta — Open Source Edition
 
 MEGA Code is an AI coding infrastructure where AI agents evolve autonomously
 and developers never stop learning.
@@ -36,12 +36,19 @@ transparent understanding of what AI is doing and why.
 
 Inside a Claude Code session, run:
 
+**Step 1 — Add the repository to your marketplace:**
+
 ```
-/plugin marketplace add git@bitbucket.org:mindai/mega-code-oss.git
+/plugin marketplace add https://github.com/wisdomgraph/mega-code.git
+```
+
+**Step 2 — Install the plugin:**
+
+```
 /plugin install mega-code@mind-ai-mega-code
 ```
 
-That's it — the plugin's slash commands are immediately available.
+Then restart Claude Code to load the plugin. The slash commands will be available in your next session.
 
 ### Update to Latest Version
 
@@ -76,14 +83,14 @@ Supported providers: **OpenAI** (`OPENAI_API_KEY`) and **Google Gemini** (`GEMIN
 
 ### Available Slash Commands
 
-| Command | Description |
-|---------|-------------|
-| `/mega-code:login` | Sign in via GitHub or Google OAuth |
-| `/mega-code:run` | Run skill extraction pipeline |
-| `/mega-code:status` | Show pending items and status |
-| `/mega-code:feedback` | Provide feedback on generated items |
-| `/mega-code:profile` | View or update your developer profile (language, level, style) |
-| `/mega-code:help` | Show help and reference |
+| Command                 | Description                                                    |
+| ----------------------- | -------------------------------------------------------------- |
+| `/mega-code:login`    | Sign in via GitHub or Google OAuth                             |
+| `/mega-code:run`      | Run skill extraction pipeline                                  |
+| `/mega-code:status`   | Show pending items and status                                  |
+| `/mega-code:feedback` | Provide feedback on generated items                            |
+| `/mega-code:profile`  | View or update your developer profile (language, level, style) |
+| `/mega-code:help`     | Show help and reference                                        |
 
 ### Example Usage
 
@@ -107,7 +114,7 @@ bash scripts/setup-oss-test.sh
 
 # This syncs skills/, hooks/, client code, and installs deps.
 # Then test locally with:
-claude --plugin-dir mega-code-oss/plugin
+claude --plugin-dir mega-code-github/plugin
 ```
 
 The sync script copies the latest code from the main repo into this submodule
@@ -116,7 +123,7 @@ so you can iterate quickly without any git commits to GitHub.
 ## Project Structure
 
 ```
-mega-code-oss/
+mega-code-github/
 ├── .claude-plugin/
 │   └── marketplace.json     # Marketplace listing (source: ./plugin)
 ├── plugin/                  # Plugin root (installed by Claude Code)
@@ -143,6 +150,14 @@ mega-code-oss/
 
 Configuration is stored in `~/.local/mega-code/` and persists across sessions.
 Use `/mega-code:login` to authenticate, or `mega-code configure` CLI for advanced settings.
+
+## Terms of Service
+
+This plugin requires use of the Mega Code API.
+
+By using this plugin, you agree to:
+
+https://megacode.ai/terms
 
 ## License
 
