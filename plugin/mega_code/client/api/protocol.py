@@ -1,8 +1,8 @@
 """Client protocol and response models for the MEGA-Code API.
 
-All models use Pydantic — zero enterprise dependencies.
-Pipeline store models (PendingSkillData, etc.) are inlined here
-to avoid importing from mega_code.pipeline.store.base.
+All models use Pydantic with no server-side dependencies.
+Pipeline output models (PendingSkillData, etc.) are defined here
+to keep the client package self-contained and installable standalone.
 """
 
 from __future__ import annotations
@@ -20,7 +20,6 @@ __all__ = [
     "PipelineStatusResult",
     "UserProfile",
     "ProfileResult",
-    "SaveLessonsResult",
     "MegaCodeBaseClient",
 ]
 
@@ -29,7 +28,7 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from mega_code.client.models import FeedbackItem, LessonDoc, TurnSet
+from mega_code.client.models import FeedbackItem, TurnSet
 
 # =============================================================================
 # Pipeline Output Models (inlined from pipeline/store/base.py)
@@ -181,14 +180,6 @@ class ProfileResult(BaseModel):
     message: str = Field("", description="Human-readable message")
 
 
-class SaveLessonsResult(BaseModel):
-    """Result of saving lesson documents."""
-
-    success: bool = Field(True, description="Whether lessons were saved")
-    output_paths: list[str] = Field(default_factory=list, description="Paths to saved files")
-    message: str = Field("", description="Human-readable message")
-
-
 # =============================================================================
 # Client Protocol
 # =============================================================================
@@ -199,8 +190,8 @@ class MegaCodeBaseClient(Protocol):
     """Client protocol for interacting with the MEGA-Code system.
 
     Implementations:
-    - MegaCodeLocal: In-process via PipelineStore (enterprise only)
-    - MegaCodeRemote: HTTP client to FastAPI server
+    - MegaCodeRemote: HTTP client to a MEGA-Code FastAPI server
+    - MegaCodeLocal: In-process implementation for server-side use
     """
 
     def upload_trajectory(
@@ -255,12 +246,3 @@ class MegaCodeBaseClient(Protocol):
     ) -> ProfileResult: ...
 
     def load_profile(self) -> UserProfile: ...
-
-    def save_lessons(
-        self,
-        *,
-        lessons: list[LessonDoc],
-        profile: dict[str, str],
-        project_id: str | None = None,
-        run_id: str | None = None,
-    ) -> SaveLessonsResult: ...

@@ -13,14 +13,13 @@ from pathlib import Path
 
 import httpx
 
-from mega_code.client.models import FeedbackItem, LessonDoc, TurnSet
+from mega_code.client.models import FeedbackItem, TurnSet
 from mega_code.client.api.protocol import (
     FeedbackRequest,
     FeedbackResult,
     OutputsResult,
     PipelineStatusResult,
     ProfileResult,
-    SaveLessonsResult,
     TriggerPipelineResult,
     UploadResult,
     UserProfile,
@@ -33,7 +32,7 @@ _AUTH_ERROR_MSG = (
     "Authentication failed ({status} {reason}). Your API key may be invalid or expired.\n"
     "\n"
     "To update your API key, run:\n"
-    "  uv run --directory ~/.claude/mega-code mega-code configure --api-key <your_key>\n"
+    "  mega-code configure --api-key <your_key>\n"
 )
 
 
@@ -252,45 +251,6 @@ class MegaCodeRemote:
         resp = self._client.get("/api/megacode/v1/profile")
         self._check_response(resp)
         return UserProfile(**resp.json())
-
-    @traced("client.remote.save_lessons", kind="CLIENT", openinference_kind="TOOL")
-    def save_lessons(
-        self,
-        *,
-        lessons: list[LessonDoc],
-        profile: dict[str, str],
-        project_id: str | None = None,
-        run_id: str | None = None,
-    ) -> SaveLessonsResult:
-        """Save lesson documents via POST /api/megacode/v1/lessons."""
-        lesson_payloads = []
-        for doc in lessons:
-            sections = [{"heading": s.heading, "content": s.content} for s in doc.sections]
-            lesson_payloads.append(
-                {
-                    "title": doc.title,
-                    "slug": doc.slug,
-                    "sections": sections,
-                }
-            )
-
-        payload: dict = {
-            "lessons": lesson_payloads,
-            "profile": profile,
-        }
-        if project_id is not None:
-            payload["project_id"] = project_id
-        if run_id is not None:
-            payload["run_id"] = run_id
-
-        resp = self._client.post("/api/megacode/v1/lessons", json=payload)
-        self._check_response(resp)
-        data = resp.json()
-        return SaveLessonsResult(
-            success=data.get("success", True),
-            output_paths=[],
-            message=data.get("message", ""),
-        )
 
     @property
     def server_url(self) -> str:
