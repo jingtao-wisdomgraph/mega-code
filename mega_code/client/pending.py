@@ -26,6 +26,7 @@ import string
 import time
 
 import httpx
+import yaml
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -34,6 +35,15 @@ if TYPE_CHECKING:
     from mega_code.client.api.protocol import MegaCodeBaseClient, PipelineStatusResult
 
 logger = logging.getLogger(__name__)
+
+_CONFIG_PATH = Path(__file__).parent / "config.yaml"
+
+
+def _load_config() -> dict:
+    """Load client config from config.yaml."""
+    with open(_CONFIG_PATH) as f:
+        return yaml.safe_load(f)
+
 
 # Pending directories under user data (~/.local/mega-code/data/).
 # MEGA_CODE_DATA_DIR env var overrides the root (same convention as client/stats.py).
@@ -752,106 +762,10 @@ def _format_lessons_section(lessons: list) -> str:
     return "\n".join(lines)
 
 
-_WORKFLOW_TEMPLATE = """\
-\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
-\u2502                    MANDATORY WORKFLOW FOR CLAUDE                   \u2502
-\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
-
-You MUST execute this workflow IMMEDIATELY:
-
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-STEP 1: READ & ANALYZE (do this silently)
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-For EACH pending item, use the Read tool to:
-- Read full content from the paths listed above
-- Analyze quality, clarity, and completeness
-- Identify potential improvements
-
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-STEP 2: PRESENT REVIEW TO USER
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-For EACH item, show the user.
-Do NOT call AskUserQuestion in this response. End after the review,
-then proceed directly to Step 3 in your next response (no user confirmation needed).
-Show each item as:
-
-\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
-\u2502 \U0001f4e6 SKILL: <name>                                    \u2502
-\u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524
-\u2502 **Summary**: <what this skill does>                 \u2502
-\u2502 **Quality**: \u2705 Good / \u26a0\ufe0f Needs improvement         \u2502
-\u2502                                                     \u2502
-\u2502 **Original Content** (collapsed or summarized):    \u2502
-\u2502 <key points from SKILL.md>                         \u2502
-\u2502                                                     \u2502
-\u2502 **Suggested Improvements**:                         \u2502
-\u2502 - <improvement 1>                                   \u2502
-\u2502 - <improvement 2>                                   \u2502
-\u2502                                                     \u2502
-\u2502 **Enhanced Version** (if improvements needed):     \u2502
-\u2502 <your improved version of the skill>               \u2502
-\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
-
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-STEP 3: ASK USER QUESTIONS (use AskUserQuestion tool)
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-**Rules for AskUserQuestion:**
-- Ask **ONE question per AskUserQuestion call** — do NOT batch multiple questions together
-- Do NOT call AskUserQuestion in the **same response** as Read tool calls or large text output
-  AskUserQuestion will not render in the UI if combined with heavy output
-- If an answer comes back **empty/blank**, re-ask that same question once more
-- After **2 consecutive empty responses**, ask the user in plain text what to do
-
-**Question flow (one at a time, separate calls):**
-1. "Which skills to install?" (multiSelect: true)
-2. "Which strategies to install?" (multiSelect: true)
-3. "Which version?" (Enhanced/Original) — only ask if items were selected in Q1 or Q2
-4. "Installation location?" (project or user level) — only ask if items were selected
-
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-STEP 4: INSTALL APPROVED ITEMS
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-Based on user's choices:
-- Skills \u2192 <location>/skills/<name>/SKILL.md
-- Strategies \u2192 .claude/rules/mega-code/<name>.md
-
-Use Write tool to create the files.
-
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-STEP 5: ARCHIVE
-\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
-After successful installation, ARCHIVE (not delete) all pending items.
-
-Run this command EXACTLY as shown (do NOT change imports):
-
-```bash
-MEGA_DIR=$(cat ~/.local/mega-code/plugin-root 2>/dev/null || echo ~/.claude/mega-code)
-[ -f "${{HOME}}/.local/mega-code/.env" ] && set -a && . "${{HOME}}/.local/mega-code/.env" && set +a
-cd "$MEGA_DIR" && set -a && . ./.env && set +a && uv run python -c "
-# IMPORTANT: archive_pending_items is in feedback module, NOT pending module
-from mega_code.client.feedback import archive_pending_items
-# IMPORTANT: listing functions are get_pending_*, NOT list_pending_*
-from mega_code.client.pending import get_pending_skills, get_pending_strategies
-skills = get_pending_skills()
-strategies = get_pending_strategies()
-# Build installed_names set from the items user chose to install in Step 3
-installed_names = ${{installed_names}}  # <-- fill with set of installed item names
-run_id = archive_pending_items(
-    run_id='${{run_id}}',
-    project_id='${{project_id}}',
-    installed_skills=[s for s in skills if s.name in installed_names],
-    skipped_skills=[s for s in skills if s.name not in installed_names],
-    installed_strategies=[s for s in strategies if s.name in installed_names],
-    skipped_strategies=[s for s in strategies if s.name not in installed_names],
-)
-print(f'ARCHIVED_RUN_ID={{run_id}}')
-"
-```
-
-Parse ARCHIVED_RUN_ID from the output.
-Report summary of what was installed and where.
-
-\u26a1 START STEP 1 NOW - READ THE PENDING FILES IMMEDIATELY \u26a1"""
+def _get_workflow_template() -> str:
+    """Load the workflow template from config.yaml."""
+    config = _load_config()
+    return config["review_notification"]["workflow_template"].rstrip("\n")
 
 
 def format_review_notification(
@@ -898,7 +812,7 @@ def format_review_notification(
 
     preamble_section = f"\n{preamble}\n" if preamble else ""
 
-    workflow = string.Template(_WORKFLOW_TEMPLATE).safe_substitute(
+    workflow = string.Template(_get_workflow_template()).safe_substitute(
         run_id=run_id or "<RUN_ID>",
         project_id=project_id or "<PROJECT_ID>",
     )
@@ -925,3 +839,54 @@ def format_review_notification(
 {strategies_section}
 {lessons_block}{errors_section}
 {workflow}"""
+
+
+# =========================================================================
+# CLI entry point
+# =========================================================================
+
+
+def main() -> int:
+    """CLI entry point for pending item operations.
+
+    Subcommands:
+      review   Print the review notification with workflow instructions.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="mega-code-pending",
+        description="Manage pending skills, strategies, and lessons",
+    )
+    sub = parser.add_subparsers(dest="command")
+
+    review_parser = sub.add_parser(
+        "review",
+        help="Print review notification with workflow instructions",
+    )
+    review_parser.add_argument("--run-id", default="", help="Pipeline run UUID")
+    review_parser.add_argument("--project-id", default="", help="Project identifier")
+
+    args = parser.parse_args()
+
+    if args.command == "review":
+        skills = get_pending_skills()
+        strategies = get_pending_strategies()
+        print(
+            format_review_notification(
+                skills,
+                strategies,
+                run_id=args.run_id,
+                project_id=args.project_id,
+            )
+        )
+        return 0
+
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(main())

@@ -364,7 +364,7 @@ def main() -> int:
         "--url",
         type=str,
         default=None,
-        help="mega-service API URL (overrides MEGA_CODE_SERVER_URL-derived URL)",
+        help="Server URL (e.g. https://console.megacode.ai). Appends API path automatically.",
     )
     parser.add_argument(
         "--client-id",
@@ -374,6 +374,10 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+
+    # Auto-append API path if --url is a bare server URL
+    if args.url and not args.url.rstrip("/").endswith(_MEGA_SERVICE_API_PATH.rstrip("/")):
+        args.url = args.url.rstrip("/") + _MEGA_SERVICE_API_PATH
 
     if args.step == "create":
         return run_create(provider=args.provider, base_url=args.url)
