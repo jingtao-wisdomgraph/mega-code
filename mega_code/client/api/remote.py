@@ -15,8 +15,10 @@ import httpx
 
 from mega_code.client.models import TurnSet
 from mega_code.client.api.protocol import (
+    ActivePipelinesResult,
     OutputsResult,
     PipelineStatusResult,
+    PipelineStopResult,
     ProfileResult,
     TriggerPipelineResult,
     UploadResult,
@@ -78,11 +80,13 @@ class MegaCodeRemote:
 
     @staticmethod
     def _check_response(resp: httpx.Response) -> None:
-        """Raise with a helpful message on auth errors, otherwise the default HTTPStatusError."""
+        """Raise on auth/config errors, otherwise the default HTTPStatusError."""
         if resp.status_code in (401, 403):
             raise ValueError(
                 _AUTH_ERROR_MSG.format(status=resp.status_code, reason=resp.reason_phrase)
             )
+        if resp.status_code == 400:
+            raise ValueError(resp.text)
         resp.raise_for_status()
 
     @traced("client.remote.upload_trajectory")
@@ -216,6 +220,24 @@ class MegaCodeRemote:
             success=data.get("success", True),
             message=data.get("message", ""),
         )
+
+    @traced("client.remote.stop_pipeline", kind="CLIENT", openinference_kind="TOOL")
+    def stop_pipeline(
+        self,
+        *,
+        run_id: str,
+    ) -> PipelineStopResult:
+        """Stop a pipeline run via POST /api/megacode/v1/pipeline/stop/{run_id}."""
+        resp = self._client.post(f"/api/megacode/v1/pipeline/stop/{run_id}")
+        self._check_response(resp)
+        return PipelineStopResult(**resp.json())
+
+    @traced("client.remote.get_active_pipelines", kind="CLIENT", openinference_kind="TOOL")
+    def get_active_pipelines(self) -> ActivePipelinesResult:
+        """List active pipelines via GET /api/megacode/v1/pipeline/status."""
+        resp = self._client.get("/api/megacode/v1/pipeline/status")
+        self._check_response(resp)
+        return ActivePipelinesResult(**resp.json())
 
     @traced("client.remote.load_profile", kind="CLIENT", openinference_kind="TOOL")
     def load_profile(self) -> UserProfile:
