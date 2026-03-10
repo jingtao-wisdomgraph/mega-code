@@ -1,71 +1,152 @@
-# mega-code plugin
+# mega-code plugin agent guide
 
-Codex plugin for session collection and skill extraction.
-All Python logic lives in `mega_code/` (the parent repo). This directory owns
-only slash commands, lifecycle hooks, and plugin configuration.
+This repo contains the MEGA-Code plugin surfaces:
 
-## Structure
+- Claude Code skills in `skills/`
+- Codex CLI skills in `codex-skills/`
+- lifecycle hooks in `hooks/`
+- helper scripts in `scripts/`
+- client/runtime code in `mega_code/`
 
+Keep changes scoped to those areas. If a task requires core extraction logic,
+prefer editing `mega_code/` rather than duplicating logic in skill docs or shell
+scripts.
+
+## Repo map
+
+```text
+skills/run/       -> /mega-code:run
+skills/status/    -> /mega-code:status
+skills/profile/   -> /mega-code:profile
+skills/login/     -> /mega-code:login
+skills/help/      -> /mega-code:help
+
+codex-skills/mega-code-run/      -> $mega-code-run
+codex-skills/mega-code-status/   -> $mega-code-status
+codex-skills/mega-code-profile/  -> $mega-code-profile
+codex-skills/mega-code-login/    -> $mega-code-login
+codex-skills/mega-code-help/     -> $mega-code-help
+
+hooks/hooks.json   -> SessionStart / SessionEnd / UserPromptSubmit / Stop
+scripts/           -> session-start.sh, check_pending_skills.py,
+                      run_pipeline_async.py, codex-bootstrap.sh
 ```
-skills/run/       → /mega-code:run      trigger extraction pipeline
-skills/status/    → /mega-code:status   show pending items
-skills/profile/   → /mega-code:profile  set language/level/style
-skills/login/     → /mega-code:login    OAuth flow
-skills/help/      → /mega-code:help     list available commands
-hooks/hooks.json  → SessionStart / SessionEnd / UserPromptSubmit / Stop
-scripts/          → session-start.sh, check_pending_skills.py, run_pipeline_async.py
-```
 
-## MEGA_DIR Setup (required in every skill that calls uv run)
+## Non-negotiable runtime rules
+
+### Resolve `MEGA_DIR` in Claude-facing skills
+
+Every Claude skill that runs `uv` must set:
 
 ```bash
 MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/mega-code/plugin-root 2>/dev/null)}"
 ```
 
-All `uv run` commands must use `--directory "$MEGA_DIR"`.
+Every `uv run` command must include:
 
-## Environment Loading
+```bash
+--directory "$MEGA_DIR"
+```
+
+### Load environment before Python commands in skills/scripts
+
+Before Python commands that depend on credentials or server config, load `.env`:
 
 ```bash
 set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a
 ```
 
-Always source `.env` before any Python command. Check `MEGA_CODE_API_KEY` is set
-before making server calls.
+If a command talks to the MEGA-Code server, check `MEGA_CODE_API_KEY` first and
+fail with a clear message when it is missing.
 
-## Skill Conventions
+### Keep related shell steps in one Bash block
 
-- Every `SKILL.md` must have `description:` and `allowed-tools:` frontmatter
-- Use `disable-model-invocation: true` for skills that only run Bash commands
-- Allowed tools should be minimal — prefer `Bash, Read` over unrestricted sets
-- All commands in one Bash block so variables stay in scope across steps
+If a skill depends on variables such as `MEGA_DIR`, `LOG`, or exported project
+context, keep the commands in one Bash block so state is preserved.
 
-## Hook Conventions
+## Claude Code skill conventions
 
-- All hook commands reference `${CLAUDE_PLUGIN_ROOT}` — never hardcode paths
-- Every hook entry must have a `timeout` field (max 30s for data hooks, 5s for checks)
-- Required events: `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`
+Claude skills live in `skills/*/SKILL.md`.
 
-## Codex Skill Conventions
+Required frontmatter:
 
-Codex CLI uses a different skill layout than Claude Code. Skills live in `codex-skills/`:
+- `description:`
+- `allowed-tools:`
 
+Optional but expected when relevant:
+
+- `argument-hint:`
+- `disable-model-invocation: true` for skills that only orchestrate Bash
+
+Authoring rules:
+
+- Prefer the smallest `allowed-tools:` set that still works.
+- Use `Bash, Read` by default; add `Write`, `Edit`, or `AskUserQuestion` only when needed.
+- Keep command examples copy-pastable.
+- Do not hardcode plugin install paths; use `${CLAUDE_PLUGIN_ROOT}` in hooks and `MEGA_DIR` in skills.
+- If a skill invokes Python entry points, prefer existing modules in `mega_code.client` or scripts in `scripts/`.
+
+## Hook conventions
+
+Hook config lives in `hooks/hooks.json`.
+
+Required rules:
+
+- Reference `${CLAUDE_PLUGIN_ROOT}` in every hook command.
+- Every hook entry must include a `timeout`.
+- Use at most `30` seconds for collection/data hooks and at most `5` seconds for quick checks.
+- Supported events in this repo are `SessionStart`, `SessionEnd`, `UserPromptSubmit`, and `Stop`.
+
+When editing hooks:
+
+- Keep commands non-interactive.
+- Prefer existing scripts/modules over inline shell.
+- Preserve fast-path behavior for prompt-time hooks.
+
+## Codex skill conventions
+
+Codex skills live in `codex-skills/mega-code-*/SKILL.md`.
+
+Codex-specific rules:
+
+- Invocation uses `$mega-code-<name>`, not `/mega-code:<name>`.
+- Frontmatter should contain `description:` only.
+- Do not add Claude-only fields such as `allowed-tools:`, `argument-hint:`, or `disable-model-invocation: true`.
+- Codex does not support lifecycle hooks; bootstrap is done lazily from skills.
+
+Bootstrap pattern:
+
+```bash
+bash "$MEGA_DIR/scripts/codex-bootstrap.sh" "$MEGA_DIR"
 ```
-codex-skills/
-├── mega-code-login/SKILL.md     # $mega-code-login
-├── mega-code-run/SKILL.md       # $mega-code-run
-├── mega-code-status/SKILL.md    # $mega-code-status
-├── mega-code-profile/SKILL.md   # $mega-code-profile
-└── mega-code-help/SKILL.md      # $mega-code-help
-```
 
-**Invocation syntax:** Codex uses `$mega-code-<name>` (dollar prefix) instead of
-Claude Code's `/mega-code:skill-name` (slash + colon).
+Use the bootstrap script from Codex skills before `uv run` commands that depend
+on the local package environment.
 
-**Frontmatter:** Codex SKILL.md files use only `description:` in frontmatter.
-Do not include `allowed-tools:`, `argument-hint:`, or `disable-model-invocation:`
-— these are Claude Code-specific fields that Codex ignores.
+## Preferred implementation pattern
 
-**Bootstrap:** The `codex-bootstrap.sh` script installs Python dependencies via
-`uv` on first run. It is called lazily from within skill scripts, not via hooks
-(Codex CLI does not support lifecycle hooks).
+When adding or updating behavior:
+
+1. Put reusable logic in `mega_code/` or `scripts/`.
+2. Keep `SKILL.md` files focused on invocation workflow and operator guidance.
+3. Reuse existing commands and paths across Claude and Codex variants where possible.
+4. Keep Claude and Codex docs aligned, but do not force identical frontmatter or bootstrap flow.
+
+## Consistency checks
+
+Before finishing a change, verify:
+
+- referenced files and commands actually exist in this repo
+- Claude skills use the `MEGA_DIR` pattern when calling `uv`
+- Codex skills use the Codex bootstrap flow
+- hook commands use `${CLAUDE_PLUGIN_ROOT}`
+- new server-facing commands document the required auth/env assumptions
+- instructions do not mention commands or skills that are absent from this repo
+
+## What to avoid
+
+- Duplicating Python business logic in `SKILL.md`
+- hardcoded absolute paths in hooks or skills
+- adding Claude-only metadata to Codex skills
+- adding Codex bootstrap steps to Claude hooks
+- leaving stale references in docs after renaming files or commands
