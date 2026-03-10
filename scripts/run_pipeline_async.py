@@ -80,18 +80,16 @@ if _env_path.exists():
 
 # All imports are from mega_code.client.* — no enterprise pipeline dependencies.
 from mega_code.client.api import create_client  # noqa: E402
-from mega_code.client.pending import (  # noqa: E402
-    PendingResult,
+from mega_code.client.pending import PendingResult  # noqa: E402
+from mega_code.client.pending import (
     format_review_notification,
     poll_pipeline_status,
     save_outputs_to_pending,
 )
-from mega_code.client.stats import (  # noqa: E402
-    get_project_sessions_dir,
-    get_projects_dir,
-    load_mapping,
-)
-from mega_code.client.utils.tracing import get_tracer, setup_tracing  # noqa: E402
+from mega_code.client.stats import get_project_sessions_dir  # noqa: E402
+from mega_code.client.stats import get_projects_dir, load_mapping
+from mega_code.client.utils.tracing import get_tracer  # noqa: E402
+from mega_code.client.utils.tracing import setup_tracing
 
 logger = logging.getLogger(__name__)
 
@@ -400,7 +398,9 @@ async def main():
     if model_name:
         logger.info(f"Using model: {model_name}")
     else:
-        logger.info("Model not specified — server will select based on configured LLM keys")
+        logger.info(
+            "Model not specified — server will select based on configured LLM keys"
+        )
 
     # Resolve include flags
     include_claude = args.include_claude or args.include_all
@@ -471,7 +471,9 @@ async def main():
 
             # Validate and resolve poll timeout before triggering (fail fast)
             if args.poll_timeout is not None and args.poll_timeout < 0:
-                raise ValueError(f"--poll-timeout must be >= 0, got {args.poll_timeout}")
+                raise ValueError(
+                    f"--poll-timeout must be >= 0, got {args.poll_timeout}"
+                )
             if args.poll_timeout is not None:
                 _raw = args.poll_timeout
             else:
@@ -486,15 +488,22 @@ async def main():
                     _raw = 1200
             poll_timeout: float | None = None if _raw == 0 else float(_raw)
             if poll_timeout is None:
-                logger.info("Poll timeout: indefinite (waiting until pipeline completes)")
+                logger.info(
+                    "Poll timeout: indefinite (waiting until pipeline completes)"
+                )
             else:
-                logger.info(f"Poll timeout: {poll_timeout:.0f}s ({poll_timeout / 60:.0f} min)")
+                logger.info(
+                    f"Poll timeout: {poll_timeout:.0f}s ({poll_timeout / 60:.0f} min)"
+                )
 
             # Trigger pipeline
             logger.info("Triggering pipeline via client...")
             trigger_result = await client.trigger_pipeline_run(**trigger_kwargs)
+
             run_id = trigger_result.run_id
-            logger.info(f"Pipeline triggered: run_id={run_id}, status={trigger_result.status}")
+            logger.info(
+                f"Pipeline triggered: run_id={run_id}, status={trigger_result.status}"
+            )
 
             # Poll for completion
             status = await poll_pipeline_status(client, run_id, timeout=poll_timeout)
@@ -509,7 +518,9 @@ async def main():
                 )
             else:
                 # Save outputs to pending folders
-                result = save_outputs_to_pending(status, project_id=project_id, run_id=run_id)
+                result = save_outputs_to_pending(
+                    status, project_id=project_id, run_id=run_id
+                )
 
             span.set_attribute("pipeline.skills_count", result.skill_count)
             span.set_attribute("pipeline.strategies_count", result.strategy_count)

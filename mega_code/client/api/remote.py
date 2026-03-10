@@ -173,14 +173,6 @@ class MegaCodeRemote:
         if model is not None:
             payload["model"] = model
 
-        dry_run = True
-        if dry_run:
-            return TriggerPipelineResult(
-                run_id="dry-run",
-                status="queued",
-                message="Dry run",
-            )
-
         async_client = self._get_async_client()
         resp = await async_client.post("/api/megacode/v1/pipeline/run", json=payload)
         self._check_response(resp)
