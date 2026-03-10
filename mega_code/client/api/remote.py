@@ -13,7 +13,6 @@ from pathlib import Path
 
 import httpx
 
-from mega_code.client.models import TurnSet
 from mega_code.client.api.protocol import (
     ActivePipelinesResult,
     OutputsResult,
@@ -24,6 +23,7 @@ from mega_code.client.api.protocol import (
     UploadResult,
     UserProfile,
 )
+from mega_code.client.models import TurnSet
 from mega_code.client.utils.tracing import traced
 
 logger = logging.getLogger(__name__)
@@ -83,7 +83,9 @@ class MegaCodeRemote:
         """Raise on auth/config errors, otherwise the default HTTPStatusError."""
         if resp.status_code in (401, 403):
             raise ValueError(
-                _AUTH_ERROR_MSG.format(status=resp.status_code, reason=resp.reason_phrase)
+                _AUTH_ERROR_MSG.format(
+                    status=resp.status_code, reason=resp.reason_phrase
+                )
             )
         if resp.status_code == 400:
             raise ValueError(resp.text)
@@ -151,7 +153,9 @@ class MegaCodeRemote:
             from mega_code.client.api.sync import sync_claude_trajectories
 
             try:
-                await asyncio.to_thread(sync_claude_trajectories, project_path, self, project_id)
+                await asyncio.to_thread(
+                    sync_claude_trajectories, project_path, self, project_id
+                )
             except Exception as exc:
                 logger.warning("Claude session sync failed (non-fatal): %s", exc)
 
@@ -168,6 +172,14 @@ class MegaCodeRemote:
             payload["limit"] = limit
         if model is not None:
             payload["model"] = model
+
+        dry_run = True
+        if dry_run:
+            return TriggerPipelineResult(
+                run_id="dry-run",
+                status="queued",
+                message="Dry run",
+            )
 
         async_client = self._get_async_client()
         resp = await async_client.post("/api/megacode/v1/pipeline/run", json=payload)
@@ -240,7 +252,9 @@ class MegaCodeRemote:
         self._check_response(resp)
         return PipelineStopResult(**resp.json())
 
-    @traced("client.remote.get_active_pipelines", kind="CLIENT", openinference_kind="TOOL")
+    @traced(
+        "client.remote.get_active_pipelines", kind="CLIENT", openinference_kind="TOOL"
+    )
     def get_active_pipelines(self) -> ActivePipelinesResult:
         """List active pipelines via GET /api/megacode/v1/pipeline/status."""
         resp = self._client.get("/api/megacode/v1/pipeline/status")
