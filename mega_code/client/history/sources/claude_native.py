@@ -155,7 +155,11 @@ class ClaudeNativeSource:
                 continue
 
             # Build synthetic index entry
-            stat = jsonl_path.stat()
+            try:
+                stat = jsonl_path.stat()
+            except OSError as e:
+                logger.debug(f"Failed to stat {jsonl_path}: {e}")
+                continue
             discovered.append({
                 "sessionId": session_id,
                 "fullPath": str(jsonl_path),
