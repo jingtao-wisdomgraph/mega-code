@@ -9,60 +9,15 @@ Ledger location:
 
 from __future__ import annotations
 
-import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Callable
 from pathlib import Path
 
-from mega_code.client.api.protocol import MegaCodeBaseClient, UploadResult
-from mega_code.client.api.sync import _load_ledger, _save_ledger
+from mega_code.client.api.protocol import MegaCodeBaseClient
+from mega_code.client.api.sync import _session_to_turnset, _upload_sessions
 from mega_code.client.models import TurnSet
 
 logger = logging.getLogger(__name__)
-
-
-def _load_codex_session_as_turnset(
-    session_file: Path,
-    session_id: str,
-) -> TurnSet | None:
-    """Load a Codex session file as a TurnSet for upload.
-
-    Args:
-        session_file: Path to the Codex JSONL session file.
-        session_id: Codex session ID.
-
-    Returns:
-        TurnSet if the session has turns, None otherwise.
-    """
-    from mega_code.client.filters import filter_metadata, filter_turns
-    from mega_code.client.history.sources.codex import CodexSource
-    from mega_code.client.turns import extract_turns
-
-    source = CodexSource()
-    try:
-        entries = source._load_jsonl_entries(session_file)
-        if not entries:
-            return None
-        session = source._load_session_from_entries(entries, session_file)
-    except Exception:
-        logger.debug("Cannot load Codex session %s from %s", session_id, session_file)
-        return None
-
-    turns, metadata = extract_turns(session)
-    if not turns:
-        return None
-
-    # Filter sensitive data before upload
-    project_dir = metadata.project_path
-    turns = filter_turns(turns, project_dir=project_dir)
-    metadata = filter_metadata(metadata, project_dir=project_dir)
-
-    return TurnSet(
-        session_id=session_id,
-        session_dir=session_file.parent,
-        turns=turns,
-        metadata=metadata,
-    )
 
 
 def sync_codex_trajectories(
@@ -88,9 +43,6 @@ def sync_codex_trajectories(
     """
     from mega_code.client.history.sources.codex import CodexSource
 
-    ledger_path = project_dir / "codex-sync-ledger.json"
-    ledger = _load_ledger(ledger_path)
-
     # Discover Codex sessions matching this project path
     codex_source = CodexSource()
     matching_entries = list(
@@ -101,8 +53,9 @@ def sync_codex_trajectories(
         logger.debug("No Codex sessions found for project path: %s", project_path)
         return 0
 
-    sessions_ledger = ledger.get("sessions", {})
-    uploaded = 0
+    # Build session list and mtime map
+    mtime_map: dict[str, float] = {}
+    sessions: list[tuple[str, Callable[[], TurnSet | None]]] = []
 
     for entry in matching_entries:
         session_file_str = entry.get("session_file_path")
@@ -117,42 +70,38 @@ def sync_codex_trajectories(
         if not codex_session_id:
             continue
 
-        # Check ledger: skip if file path + mtime unchanged
-        file_mtime = session_file.stat().st_mtime
-        existing = sessions_ledger.get(session_file_str)
-        if existing and existing.get("file_mtime") == file_mtime:
-            logger.debug("Skipping unchanged Codex session: %s", codex_session_id)
-            continue
+        mtime_map[codex_session_id] = session_file.stat().st_mtime
 
-        # Load and convert to TurnSet
-        turn_set = _load_codex_session_as_turnset(session_file, codex_session_id)
-        if not turn_set or not turn_set.turns:
-            logger.debug("Skipping empty Codex session: %s", codex_session_id)
-            continue
+        def _make_loader(
+            sf: Path = session_file,
+            sid: str = codex_session_id,
+        ) -> TurnSet | None:
+            source = CodexSource()
+            try:
+                entries = source._load_jsonl_entries(sf)
+                if not entries:
+                    return None
+                session = source._load_session_from_entries(entries, sf)
+            except Exception:
+                logger.debug("Cannot load Codex session %s from %s", sid, sf)
+                return None
+            return _session_to_turnset(session, sf.parent)
 
-        # Upload
-        result: UploadResult = client.upload_trajectory(
-            turn_set=turn_set,
-            project_id=project_id,
-        )
-        logger.info("Uploaded Codex session %s: %s", codex_session_id, result.message)
+        sessions.append((codex_session_id, _make_loader))
 
-        # Update ledger
-        sessions_ledger[session_file_str] = {
-            "codex_session_id": codex_session_id,
-            "uploaded_at": datetime.now(timezone.utc).isoformat(),
-            "turn_count": len(turn_set.turns),
-            "file_mtime": file_mtime,
-        }
-        uploaded += 1
+    def _needs_resync(sid: str, existing: dict) -> bool:
+        return existing.get("file_mtime") != mtime_map.get(sid)
 
-    # Save updated ledger
-    ledger["sessions"] = sessions_ledger
-    _save_ledger(ledger_path, ledger)
+    def _extra_entry(sid: str) -> dict:
+        return {"file_mtime": mtime_map[sid]}
 
-    logger.info(
-        "Codex sync complete: %d new, %d existing",
-        uploaded,
-        len(sessions_ledger) - uploaded,
+    return _upload_sessions(
+        ledger_path=project_dir / "codex-sync-ledger.json",
+        ledger_key="sessions",
+        sessions=sessions,
+        client=client,
+        project_id=project_id,
+        label="Codex ",
+        needs_resync=_needs_resync,
+        extra_entry=_extra_entry,
     )
-    return uploaded

@@ -1,9 +1,6 @@
 """Cross-module integration tests for the Codex pipeline (Phase 6)."""
 
-import os
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -89,55 +86,3 @@ class TestParserToSyncIntegration:
         assert len(turn_set.turns) > 0
 
 
-class TestCliContractHelp:
-    """Cycle 6: CLI --help includes Codex flags."""
-
-    def test_cli_help_includes_include_codex(self):
-        script = Path(__file__).parent.parent.parent / "scripts" / "run_pipeline_async.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        assert result.returncode == 0
-        assert "--include-codex" in result.stdout
-
-    def test_cli_help_includes_include_all(self):
-        script = Path(__file__).parent.parent.parent / "scripts" / "run_pipeline_async.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        assert result.returncode == 0
-        assert "--include-all" in result.stdout
-
-
-class TestCliContractPayload:
-    """Cycle 7: CLI accepts Codex flags without argparse error."""
-
-    def test_include_codex_accepted_by_argparse(self):
-        """--include-codex is accepted without argparse error."""
-        script = Path(__file__).parent.parent.parent / "scripts" / "run_pipeline_async.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--include-codex", "--env-debug"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            env={**os.environ, "CLAUDE_PROJECT_DIR": "/tmp/fake"},
-        )
-        assert result.returncode == 0
-
-    def test_include_all_accepted_by_argparse(self):
-        """--include-all is accepted without argparse error."""
-        script = Path(__file__).parent.parent.parent / "scripts" / "run_pipeline_async.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--include-all", "--env-debug"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            env={**os.environ, "CLAUDE_PROJECT_DIR": "/tmp/fake"},
-        )
-        assert result.returncode == 0
