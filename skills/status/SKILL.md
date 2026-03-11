@@ -17,6 +17,12 @@ uv run --directory "$MEGA_DIR" python -m mega_code.client.check_auth
 
 If the auth check fails (non-zero exit), show the output to the user and stop.
 
+## Pipeline Status
+
+```bash
+uv run --directory "$MEGA_DIR" mega-code pipeline-status 2>/dev/null || true
+```
+
 ## Quick Status
 
 ```bash
