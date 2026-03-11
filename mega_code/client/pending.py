@@ -30,6 +30,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from mega_code.client.dirs import data_dir as _data_dir
+
 if TYPE_CHECKING:
     from mega_code.client.api.protocol import MegaCodeBaseClient, PipelineStatusResult
 
@@ -43,8 +45,6 @@ def _load_config() -> dict:
     with open(_CONFIG_PATH) as f:
         return yaml.safe_load(f)
 
-
-from mega_code.client.dirs import data_dir as _data_dir
 
 # Pending directories under user data (resolved via dirs.data_dir()).
 _MEGA_CODE_DATA_DIR = _data_dir() / "data"

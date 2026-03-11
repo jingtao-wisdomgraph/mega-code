@@ -17,7 +17,7 @@ import os
 import sys
 from pathlib import Path
 
-from mega_code.client.dirs import data_dir
+from mega_code.client.dirs import data_dir as get_data_dir
 from mega_code.client.profile import get_profile_path
 
 # ═══════════════════════════════════════════════════════════════════
@@ -25,9 +25,9 @@ from mega_code.client.profile import get_profile_path
 # ═══════════════════════════════════════════════════════════════════
 
 
-def get_projects_data_dir() -> Path:
+def get_projects_get_data_dir() -> Path:
     """Get the data directory for project data storage."""
-    return data_dir() / "projects"
+    return get_data_dir() / "projects"
 
 
 def _get_plugin_root() -> Path | None:
@@ -44,7 +44,7 @@ def _get_plugin_root() -> Path | None:
         return Path(env_root)
 
     # Check breadcrumb written by session-start.sh
-    breadcrumb = data_dir() / "plugin-root"
+    breadcrumb = get_data_dir() / "plugin-root"
     if breadcrumb.exists():
         root = breadcrumb.read_text().strip()
         if root and Path(root).is_dir():
@@ -55,7 +55,7 @@ def _get_plugin_root() -> Path | None:
 
 def get_env_path() -> Path:
     """Get the path to the stable .env credential file."""
-    return data_dir() / ".env"
+    return get_data_dir() / ".env"
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -108,8 +108,8 @@ def save_env_file(env_path: Path, env_vars: dict[str, str]) -> None:
 
 def cmd_status(args: argparse.Namespace) -> int:
     """Check mega-code installation status."""
-    data_root = _get_mega_code_data_root()
-    data_dir = get_projects_data_dir()
+    data_root = get_data_dir()
+    data_dir = get_projects_get_data_dir()
     plugin_root = _get_plugin_root()
 
     print("MEGA-Code Status")
