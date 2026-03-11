@@ -79,12 +79,26 @@ Supported providers: **OpenAI** (`OPENAI_API_KEY`) and **Google Gemini** (`GEMIN
 ### Codex CLI
 
 MEGA-Code also supports [OpenAI Codex CLI](https://github.com/openai/codex) via
-the `.agents/skills/` integration.
+the [Vercel Skills](https://github.com/vercel-labs/skills) integration.
 
-**Install:**
+**Step 1 — Install skills:**
 
 ```bash
-git clone https://github.com/wisdomgraph/mega-code.git ~/.agents/skills/mega-code
+npx skills add wisdomgraph/mega-code/codex-skills
+```
+
+**Step 2 — Sign in:**
+
+```
+$mega-code-login
+```
+
+**Step 3 — Add your own LLM API key** at [megacode.ai](https://megacode.ai) under Account → API Keys.
+
+**Step 4 — Run in any project:**
+
+```
+$mega-code-run --include-codex
 ```
 
 **Available commands** (invoked with `$` prefix in Codex):
