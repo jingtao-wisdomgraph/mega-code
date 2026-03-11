@@ -84,6 +84,8 @@ def _upload_sessions(
     client: MegaCodeBaseClient,
     project_id: str,
     label: str = "",
+    needs_resync: Callable[[str, dict], bool] | None = None,
+    extra_entry: Callable[[str], dict] | None = None,
 ) -> int:
     """Upload sessions not yet in the ledger and persist updated ledger.
 
@@ -94,27 +96,39 @@ def _upload_sessions(
         client: Authenticated client.
         project_id: Project identifier for the server.
         label: Label for log messages (e.g. "" or "Claude ").
+        needs_resync: Optional callback(session_id, existing_entry) -> bool.
+            For sessions already in the ledger, returns True if they should
+            be re-uploaded (e.g. file mtime changed). Default None = never resync.
+        extra_entry: Optional callback(session_id) -> dict of extra fields
+            to merge into each ledger entry. Default None = no extra fields.
 
     Returns:
         Number of newly uploaded sessions.
     """
     ledger = _load_ledger(ledger_path)
-    synced = set(ledger.get(ledger_key, {}).keys())
+    synced = ledger.get(ledger_key, {})
 
-    unsynced = [(sid, loader) for sid, loader in sessions if sid not in synced]
-    if not unsynced:
+    to_upload: list[tuple[str, Callable[[], TurnSet | None]]] = []
+    for sid, loader in sessions:
+        existing = synced.get(sid)
+        if existing is None:
+            to_upload.append((sid, loader))
+        elif needs_resync is not None and needs_resync(sid, existing):
+            to_upload.append((sid, loader))
+
+    if not to_upload:
         logger.info("All %d %ssessions already synced", len(synced), label)
         return 0
 
     logger.info(
         "Syncing %d new %ssessions (%d already synced)",
-        len(unsynced),
+        len(to_upload),
         label,
         len(synced),
     )
 
     uploaded = 0
-    for session_id, loader in unsynced:
+    for session_id, loader in to_upload:
         turn_set = loader()
         if not turn_set or not turn_set.turns:
             logger.debug("Skipping empty %ssession: %s", label, session_id)
@@ -126,10 +140,13 @@ def _upload_sessions(
         )
         logger.info("Uploaded %s%s: %s", label, session_id, result.message)
 
-        ledger.setdefault(ledger_key, {})[session_id] = {
+        entry = {
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
             "turn_count": len(turn_set.turns),
         }
+        if extra_entry is not None:
+            entry.update(extra_entry(session_id))
+        ledger.setdefault(ledger_key, {})[session_id] = entry
         uploaded += 1
 
     # Save updated ledger

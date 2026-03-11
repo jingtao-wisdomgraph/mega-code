@@ -154,6 +154,13 @@ class MegaCodeRemote:
                 sync_claude_trajectories, project_path, self, project_id
             )
 
+        if include_codex and project_path is not None:
+            from mega_code.client.api.codex_sync import sync_codex_trajectories
+
+            await asyncio.to_thread(
+                sync_codex_trajectories, project_path, self, project_id, str(project_path)
+            )
+
         payload = {
             "project_id": project_id,
             "force": force,
@@ -161,6 +168,8 @@ class MegaCodeRemote:
             "include_claude": include_claude,
             "include_codex": include_codex,
         }
+        if session_id is not None:
+            payload["session_id"] = session_id
         if steps is not None:
             payload["steps"] = steps
         if limit is not None:
@@ -273,11 +282,11 @@ class MegaCodeRemote:
     def __enter__(self):
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: object) -> None:
         self.close()
 
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, *args: object) -> None:
         await self.aclose()
