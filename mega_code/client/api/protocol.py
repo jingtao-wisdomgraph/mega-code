@@ -149,8 +149,7 @@ class UserProfile(BaseModel):
     style: str | None = Field(None, description="Teaching style (Mentor, Formal, Concise)")
     eureka: bool = Field(True, description="[MegaEureka] Enable learning cards generation")
     goals: list[str] = Field(
-        default_factory=list,
-        description="[MegaEureka] Learning goals for personalized content",
+        default_factory=list, description="[MegaEureka] Learning goals for personalized content"
     )
     enabled: bool = Field(True, description="[MegaEureka] Master switch for personalization")
     auto_permission: bool = Field(

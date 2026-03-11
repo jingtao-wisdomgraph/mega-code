@@ -297,8 +297,7 @@ class OpenCodeSource:
 
             # Process children in creation time order
             child_list = sorted(
-                children.get(msg_id, []),
-                key=lambda m: m.get("time", {}).get("created", 0),
+                children.get(msg_id, []), key=lambda m: m.get("time", {}).get("created", 0)
             )
 
             for child in child_list:

@@ -31,12 +31,7 @@ from mega_code.client.filters import filter_metadata, filter_turns
 from mega_code.client.history.sources.mega_code import MegaCodeSource
 from mega_code.client.models import TurnSet
 from mega_code.client.turns import extract_turns
-from mega_code.client.schema import (
-    CollectorSessionMetadata,
-    SessionStats,
-    estimate_cost,
-    utcnow,
-)
+from mega_code.client.schema import CollectorSessionMetadata, SessionStats, estimate_cost, utcnow
 from mega_code.client.stats import (
     initialize_session,
     finalize_session,

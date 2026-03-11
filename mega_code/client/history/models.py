@@ -57,12 +57,10 @@ class Message(BaseModel):
     role: Literal["user", "assistant", "system"] = Field(description="Message role")
     content: str = Field(default="", description="Plain text content of the message")
     tool_calls: list[ToolCall] = Field(
-        default_factory=list,
-        description="Tool calls made in this message (assistant only)",
+        default_factory=list, description="Tool calls made in this message (assistant only)"
     )
     tool_results: list[ToolCall] = Field(
-        default_factory=list,
-        description="Tool results received in this message (user only)",
+        default_factory=list, description="Tool results received in this message (user only)"
     )
     timestamp: datetime | None = Field(default=None, description="Message creation timestamp")
     token_usage: TokenUsage | None = Field(default=None, description="Token usage for this message")

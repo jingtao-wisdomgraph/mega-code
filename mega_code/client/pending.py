@@ -161,10 +161,7 @@ class PendingResult:
         return self.total_count > 0
 
 
-from mega_code.client.skill_utils import (
-    sanitize_name,
-    ensure_skill_frontmatter,
-)  # noqa: E402
+from mega_code.client.skill_utils import sanitize_name, ensure_skill_frontmatter  # noqa: E402
 
 # Backwards-compatible aliases for internal callers
 _sanitize_name = sanitize_name

@@ -11,12 +11,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Iterator
 
-from mega_code.client.history.models import (
-    HistorySessionMetadata,
-    Message,
-    Session,
-    ToolCall,
-)
+from mega_code.client.history.models import HistorySessionMetadata, Message, Session, ToolCall
 
 logger = logging.getLogger(__name__)
 

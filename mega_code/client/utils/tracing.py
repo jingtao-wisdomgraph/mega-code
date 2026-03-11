@@ -44,12 +44,7 @@ if _HAS_OTEL:
         """Get a tracer by name."""
         return _trace.get_tracer(name)
 
-    def traced(
-        name_or_fn=None,
-        *,
-        kind: str = "INTERNAL",
-        openinference_kind: str | None = None,
-    ):
+    def traced(name_or_fn=None, *, kind: str = "INTERNAL", openinference_kind: str | None = None):
         """Decorator: create a span around a function.
 
         Supports both @traced and @traced("name") usage.
@@ -110,9 +105,7 @@ if _HAS_OTEL:
         if not endpoint:
             return False
 
-        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-            OTLPSpanExporter,
-        )
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
         from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor

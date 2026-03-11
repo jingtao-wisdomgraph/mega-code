@@ -317,9 +317,7 @@ def main():
     configure_parser.add_argument("--user-id", "-u", type=str, help="Set your user identifier")
     configure_parser.add_argument("--api-key", "-k", type=str, help="Set MEGA-Code API key")
     configure_parser.add_argument(
-        "--server-url",
-        type=str,
-        help="Set MEGA-Code server URL (e.g. http://localhost:8000)",
+        "--server-url", type=str, help="Set MEGA-Code server URL (e.g. http://localhost:8000)"
     )
     configure_parser.add_argument(
         "--client-mode",
