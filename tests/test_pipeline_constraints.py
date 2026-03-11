@@ -18,7 +18,6 @@ from mega_code.client.api.protocol import (
 )
 from mega_code.client.api.remote import MegaCodeRemote
 
-
 # ═══════════════════════════════════════════════════════════════════════════
 # Unit tests: client handles pipeline-busy (409) responses
 # ═══════════════════════════════════════════════════════════════════════════
