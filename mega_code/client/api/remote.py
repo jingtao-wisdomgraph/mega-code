@@ -11,7 +11,6 @@ from pathlib import Path
 
 import httpx
 
-from mega_code.client.models import TurnSet
 from mega_code.client.api.protocol import (
     ActivePipelinesResult,
     OutputsResult,
@@ -22,6 +21,7 @@ from mega_code.client.api.protocol import (
     UploadResult,
     UserProfile,
 )
+from mega_code.client.models import TurnSet
 from mega_code.client.utils.tracing import traced
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,9 @@ class MegaCodeRemote:
         """Raise on auth/config errors, otherwise the default HTTPStatusError."""
         if resp.status_code in (401, 403):
             raise ValueError(
-                _AUTH_ERROR_MSG.format(status=resp.status_code, reason=resp.reason_phrase)
+                _AUTH_ERROR_MSG.format(
+                    status=resp.status_code, reason=resp.reason_phrase
+                )
             )
         if resp.status_code == 400:
             raise ValueError(resp.text)
@@ -145,6 +147,20 @@ class MegaCodeRemote:
 
             await asyncio.to_thread(sync_trajectories, project_path, self, project_id)
 
+        if project_path is not None and include_claude:
+            from mega_code.client.api.sync import sync_claude_trajectories
+
+            await asyncio.to_thread(
+                sync_claude_trajectories, project_path, self, project_id
+            )
+
+        if include_codex and project_path is not None:
+            from mega_code.client.api.codex_sync import sync_codex_trajectories
+
+            await asyncio.to_thread(
+                sync_codex_trajectories, project_path, self, project_id, str(project_path)
+            )
+
         payload = {
             "project_id": project_id,
             "force": force,
@@ -152,6 +168,8 @@ class MegaCodeRemote:
             "include_claude": include_claude,
             "include_codex": include_codex,
         }
+        if session_id is not None:
+            payload["session_id"] = session_id
         if steps is not None:
             payload["steps"] = steps
         if limit is not None:
@@ -230,7 +248,9 @@ class MegaCodeRemote:
         self._check_response(resp)
         return PipelineStopResult(**resp.json())
 
-    @traced("client.remote.get_active_pipelines", kind="CLIENT", openinference_kind="TOOL")
+    @traced(
+        "client.remote.get_active_pipelines", kind="CLIENT", openinference_kind="TOOL"
+    )
     def get_active_pipelines(self) -> ActivePipelinesResult:
         """List active pipelines via GET /api/megacode/v1/pipeline/status."""
         resp = self._client.get("/api/megacode/v1/pipeline/status")
@@ -262,11 +282,11 @@ class MegaCodeRemote:
     def __enter__(self):
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: object) -> None:
         self.close()
 
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, *args: object) -> None:
         await self.aclose()
