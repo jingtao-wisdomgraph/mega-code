@@ -201,7 +201,7 @@ class MegaCodeRemote:
 
         Order of operations:
           1. PUT /api/megacode/v1/profile  → persists to mega-service Postgres
-          2. Write ~/.local/mega-code/profile.json  → local mirror for inspection
+          2. Write ~/.local/share/mega-code/profile.json  → local mirror for inspection
              (only written when the API call succeeds)
         """
         payload = profile.model_dump(by_alias=True)

@@ -5,7 +5,7 @@ have been uploaded. Before triggering a remote pipeline run, the caller invokes
 sync_trajectories() to ensure all local sessions are on the server.
 
 Ledger location:
-    ~/.local/mega-code/projects/{project_id}/sync-ledger.json
+    ~/.local/share/mega-code/projects/{project_id}/sync-ledger.json
 """
 
 from __future__ import annotations
@@ -108,7 +108,7 @@ def sync_trajectories(
 
     Args:
         project_dir: Local mega-code project data folder
-            (e.g. ~/.local/mega-code/projects/mega-code_b39e0992/).
+            (e.g. ~/.local/share/mega-code/projects/mega-code_b39e0992/).
         client: Authenticated client (typically MegaCodeRemote).
         project_id: Project identifier for the server.
 

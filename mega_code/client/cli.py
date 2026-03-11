@@ -17,6 +17,7 @@ import os
 import sys
 from pathlib import Path
 
+from mega_code.client.dirs import data_dir
 from mega_code.client.profile import get_profile_path
 
 # ═══════════════════════════════════════════════════════════════════
@@ -24,14 +25,9 @@ from mega_code.client.profile import get_profile_path
 # ═══════════════════════════════════════════════════════════════════
 
 
-def _get_mega_code_data_root() -> Path:
-    """Get the base data directory for mega-code."""
-    return Path.home() / ".local" / "mega-code"
-
-
 def get_projects_data_dir() -> Path:
     """Get the data directory for project data storage."""
-    return _get_mega_code_data_root() / "projects"
+    return data_dir() / "projects"
 
 
 def _get_plugin_root() -> Path | None:
@@ -39,7 +35,7 @@ def _get_plugin_root() -> Path | None:
 
     Priority:
     1. CLAUDE_PLUGIN_ROOT environment variable (set by Claude Code)
-    2. Breadcrumb file ~/.local/mega-code/plugin-root
+    2. Breadcrumb file <data_dir>/plugin-root
     3. None if not found
     """
     # Check env var first (available inside hook execution)
@@ -48,7 +44,7 @@ def _get_plugin_root() -> Path | None:
         return Path(env_root)
 
     # Check breadcrumb written by session-start.sh
-    breadcrumb = _get_mega_code_data_root() / "plugin-root"
+    breadcrumb = data_dir() / "plugin-root"
     if breadcrumb.exists():
         root = breadcrumb.read_text().strip()
         if root and Path(root).is_dir():
@@ -58,13 +54,8 @@ def _get_plugin_root() -> Path | None:
 
 
 def get_env_path() -> Path:
-    """Get the path to the stable .env credential file.
-
-    Always returns ~/.local/mega-code/.env, creating the directory if needed.
-    """
-    stable_path = _get_mega_code_data_root() / ".env"
-    stable_path.parent.mkdir(parents=True, exist_ok=True)
-    return stable_path
+    """Get the path to the stable .env credential file."""
+    return data_dir() / ".env"
 
 
 # ═══════════════════════════════════════════════════════════════════
