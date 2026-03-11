@@ -22,9 +22,10 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import dotenv  # noqa: E402
+from mega_code.client.dirs import data_dir  # noqa: E402
 
-# 1. Stable credential store (~/.local/share/mega-code/.env) — always loaded first
-_stable_env = Path.home() / ".local" / "share" / "mega-code" / ".env"
+# 1. Stable credential store (data_dir()/.env) — always loaded first
+_stable_env = data_dir() / ".env"
 if _stable_env.exists():
     dotenv.load_dotenv(_stable_env, override=False)
 

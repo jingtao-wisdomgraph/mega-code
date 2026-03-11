@@ -23,13 +23,12 @@ pipelines:
           - uv-cache
         script:
           - curl -LsSf https://astral.sh/uv/install.sh | UV_INSTALL_DIR=/usr/local/bin sh
-          - uv sync --extra telemetry --group dev
+          - uv sync --extra telemetry --group dev --group test
           # Format check (non-destructive)
           - uv run black mega_code/ tests/ --check
           # Lint
           - uv run flake8 mega_code/ tests/
           # Run tests
-          - uv sync --extra telemetry --group dev --group test
           - |
             if [ -d tests ] && find tests -name "test_*.py" -print -quit | grep -q .; then
               uv run pytest tests/ -v --timeout=60

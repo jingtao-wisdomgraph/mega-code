@@ -25,7 +25,7 @@ from mega_code.client.profile import get_profile_path
 # ═══════════════════════════════════════════════════════════════════
 
 
-def get_projects_get_data_dir() -> Path:
+def get_projects_data_dir() -> Path:
     """Get the data directory for project data storage."""
     return get_data_dir() / "projects"
 
@@ -109,7 +109,7 @@ def save_env_file(env_path: Path, env_vars: dict[str, str]) -> None:
 def cmd_status(args: argparse.Namespace) -> int:
     """Check mega-code installation status."""
     data_root = get_data_dir()
-    data_dir = get_projects_get_data_dir()
+    data_dir = get_projects_data_dir()
     plugin_root = _get_plugin_root()
 
     print("MEGA-Code Status")
