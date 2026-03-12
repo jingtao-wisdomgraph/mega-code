@@ -81,10 +81,13 @@ Supported providers: **OpenAI** (`OPENAI_API_KEY`) and **Google Gemini** (`GEMIN
 MEGA-Code also supports [OpenAI Codex CLI](https://github.com/openai/codex) via
 the [Vercel Skills](https://github.com/vercel-labs/skills) integration.
 
+> The `skills/` directory serves both Claude Code and Codex CLI. Codex resolves
+> skill names from the `name:` frontmatter field in each SKILL.md.
+
 **Step 1 — Install skills:**
 
 ```bash
-npx skills add wisdomgraph/mega-code/codex-skills
+npx skills add wisdomgraph/mega-code/skills
 ```
 
 **Step 2 — Sign in:**
@@ -152,24 +155,18 @@ mega-code-oss/
 │   │   └── plugin.json      # Plugin metadata
 │   ├── hooks/
 │   │   └── hooks.json       # Lifecycle hooks (SessionStart, etc.)
-│   ├── skills/
-│   │   ├── login/SKILL.md    # /mega-code:login
-│   │   ├── run/SKILL.md      # /mega-code:run
-│   │   ├── status/SKILL.md   # /mega-code:status
+│   ├── skills/              # Unified skills (Claude Code + Codex)
+│   │   ├── login/SKILL.md    # /mega-code:login / $mega-code-login
+│   │   ├── run/SKILL.md      # /mega-code:run / $mega-code-run
+│   │   ├── status/SKILL.md   # /mega-code:status / $mega-code-status
 │   │   ├── feedback/SKILL.md # /mega-code:feedback
-│   │   ├── profile/SKILL.md  # /mega-code:profile
-│   │   └── help/SKILL.md     # /mega-code:help
+│   │   ├── profile/SKILL.md  # /mega-code:profile / $mega-code-profile
+│   │   └── help/SKILL.md     # /mega-code:help / $mega-code-help
 │   ├── mega_code/
 │   │   └── client/          # Python client modules
 │   ├── scripts/
 │   │   └── session-start.sh # Bootstrap script
 │   └── pyproject.toml
-├── codex-skills/             # Codex CLI skill definitions
-│   ├── mega-code-login/      # $mega-code-login
-│   ├── mega-code-run/        # $mega-code-run
-│   ├── mega-code-status/     # $mega-code-status
-│   ├── mega-code-profile/    # $mega-code-profile
-│   └── mega-code-help/       # $mega-code-help
 ├── scripts/
 │   └── codex-bootstrap.sh   # First-run dependency installer
 └── README.md

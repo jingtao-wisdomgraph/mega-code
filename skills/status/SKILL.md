@@ -1,5 +1,6 @@
 ---
-description: Show MEGA-Code status including pending skills, strategies, and recent pipeline runs.
+name: mega-code-status
+description: "Show MEGA-Code status including pending skills, strategies, and recent pipeline runs."
 argument-hint: ""
 allowed-tools: Bash, Read
 ---
@@ -12,6 +13,13 @@ Show current MEGA-Code status and pending items.
 
 ```bash
 MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/plugin-root 2>/dev/null)}"
+if [ -z "$MEGA_DIR" ] || [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
+  MEGA_DIR="$HOME/.local/share/mega-code/pkg"
+  if [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
+    git clone --depth 1 https://github.com/wisdomgraph/mega-code.git "$MEGA_DIR"
+  fi
+  bash "$MEGA_DIR/scripts/codex-bootstrap.sh" "$MEGA_DIR"
+fi
 uv run --directory "$MEGA_DIR" python -m mega_code.client.check_auth
 ```
 

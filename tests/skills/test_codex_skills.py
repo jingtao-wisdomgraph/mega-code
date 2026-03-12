@@ -1,4 +1,4 @@
-"""Phase 4: Codex skill adaptation tests."""
+"""Unified skill tests: verify skills/ serves both Claude Code and Codex CLI."""
 
 import os
 import subprocess
@@ -8,22 +8,13 @@ from pathlib import Path
 import pytest
 import yaml
 
-CODEX_SKILLS_DIR = Path(__file__).parent.parent.parent / "codex-skills"
+SKILLS_DIR = Path(__file__).parent.parent.parent / "skills"
 SKILL_NAMES = [
-    "mega-code-login",
-    "mega-code-run",
-    "mega-code-status",
-    "mega-code-profile",
-    "mega-code-help",
-]
-
-FORBIDDEN_STRINGS = [
-    "CLAUDE_PLUGIN_ROOT",
-    "CLAUDE_PROJECT_DIR",
-    "/mega-code:",
-    "/plugin marketplace",
-    ".claude/skills/",
-    ".claude/rules/",
+    "login",
+    "run",
+    "status",
+    "profile",
+    "help",
 ]
 
 
@@ -32,7 +23,7 @@ FORBIDDEN_STRINGS = [
 
 def test_all_five_skills_exist():
     for name in SKILL_NAMES:
-        path = CODEX_SKILLS_DIR / name / "SKILL.md"
+        path = SKILLS_DIR / name / "SKILL.md"
         assert path.is_file(), f"Missing: {path}"
 
 
@@ -40,56 +31,65 @@ def test_all_five_skills_exist():
 
 
 @pytest.mark.parametrize("skill_name", SKILL_NAMES)
-def test_codex_skill_frontmatter_valid(skill_name):
-    path = CODEX_SKILLS_DIR / skill_name / "SKILL.md"
+def test_unified_skill_frontmatter_valid(skill_name):
+    path = SKILLS_DIR / skill_name / "SKILL.md"
     content = path.read_text()
     parts = content.split("---", 2)
     assert len(parts) >= 3, "Missing YAML frontmatter"
     fm = yaml.safe_load(parts[1])
-    assert "description" in fm
+    # Must have both Claude Code and Codex required fields
+    assert "name" in fm, f"{skill_name}: missing 'name' (required for Codex)"
+    assert "description" in fm, f"{skill_name}: missing 'description'"
     assert len(fm["description"]) > 0
-    for forbidden in ("allowed-tools", "argument-hint", "disable-model-invocation"):
-        assert forbidden not in fm
+    assert "allowed-tools" in fm, f"{skill_name}: missing 'allowed-tools' (required for Claude Code)"
 
 
 # ── Cycle 3 ───────────────────────────────────────────────────────────
 
 
 @pytest.mark.parametrize("skill_name", SKILL_NAMES)
-def test_no_claude_code_references(skill_name):
-    path = CODEX_SKILLS_DIR / skill_name / "SKILL.md"
+def test_unified_setup_block(skill_name):
+    """Skills that call uv run must use the unified MEGA_DIR setup with fallback."""
+    path = SKILLS_DIR / skill_name / "SKILL.md"
     content = path.read_text()
-    for forbidden in FORBIDDEN_STRINGS:
-        assert forbidden not in content, f"Found Claude ref: {forbidden}"
+    if "uv run" not in content:
+        pytest.skip(f"{skill_name} does not call uv run")
+    assert "CLAUDE_PLUGIN_ROOT" in content, f"{skill_name}: missing CLAUDE_PLUGIN_ROOT"
+    assert "plugin-root" in content, f"{skill_name}: missing plugin-root breadcrumb fallback"
+    assert "codex-bootstrap.sh" in content, f"{skill_name}: missing codex-bootstrap.sh"
 
 
 # ── Cycle 4 ───────────────────────────────────────────────────────────
 
 
 @pytest.mark.parametrize("skill_name", SKILL_NAMES)
-def test_codex_invocation_syntax(skill_name):
-    path = CODEX_SKILLS_DIR / skill_name / "SKILL.md"
+def test_module_entry_points(skill_name):
+    """Skills should use python -m mega_code.client.* entry points."""
+    path = SKILLS_DIR / skill_name / "SKILL.md"
     content = path.read_text()
-    assert "/mega-code:" not in content
-
-
-def test_help_skill_uses_dollar_prefix():
-    content = (CODEX_SKILLS_DIR / "mega-code-help" / "SKILL.md").read_text()
-    assert "$mega-code-login" in content
-    assert "$mega-code-run" in content
-    assert "$mega-code-status" in content
+    if "uv run" in content and "python" in content:
+        assert "scripts/run_pipeline_async.py" not in content, \
+            f"{skill_name}: should use module entry point, not script"
+        assert "scripts/check_pending_skills.py" not in content, \
+            f"{skill_name}: should use module entry point, not script"
 
 
 # ── Cycle 5 ───────────────────────────────────────────────────────────
 
 
 def test_run_skill_includes_codex_flag():
-    content = (CODEX_SKILLS_DIR / "mega-code-run" / "SKILL.md").read_text()
+    content = (SKILLS_DIR / "run" / "SKILL.md").read_text()
     assert "--include-codex" in content
-    # Flag should appear in the bash command template
-    lines = content.split("\n")
-    cmd_lines = [line for line in lines if "run_pipeline_async.py" in line]
-    assert any("--include-codex" in line for line in cmd_lines)
+    assert "--include-all" in content
+
+
+def test_help_skill_shows_both_syntaxes():
+    content = (SKILLS_DIR / "help" / "SKILL.md").read_text()
+    assert "$mega-code-login" in content
+    assert "$mega-code-run" in content
+    assert "$mega-code-status" in content
+    assert "/mega-code:login" in content
+    assert "/mega-code:run" in content
 
 
 # ── Cycle 6 ───────────────────────────────────────────────────────────
