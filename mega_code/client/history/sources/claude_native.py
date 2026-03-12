@@ -5,9 +5,10 @@ Loads historical conversation data from Claude Code's native storage format.
 
 import json
 import logging
-from datetime import datetime, timezone
+from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any
 
 from mega_code.client.history.models import (
     HistorySessionMetadata,
@@ -85,7 +86,7 @@ class ClaudeNativeSource:
 
         if index_path.exists():
             try:
-                with open(index_path, "r", encoding="utf-8") as f:
+                with open(index_path, encoding="utf-8") as f:
                     data = json.load(f)
                 entries = data.get("entries", [])
             except (json.JSONDecodeError, OSError) as e:
@@ -131,7 +132,7 @@ class ClaudeNativeSource:
             git_branch = None
             is_sidechain = False
             try:
-                with open(jsonl_path, "r", encoding="utf-8") as f:
+                with open(jsonl_path, encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
                         if not line:
@@ -165,8 +166,8 @@ class ClaudeNativeSource:
                     "projectPath": cwd,
                     "gitBranch": git_branch,
                     "isSidechain": False,
-                    "created": datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc).isoformat(),
-                    "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+                    "created": datetime.fromtimestamp(stat.st_ctime, tz=UTC).isoformat(),
+                    "modified": datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat(),
                 }
             )
 
@@ -193,7 +194,7 @@ class ClaudeNativeSource:
             return entries
 
         try:
-            with open(jsonl_path, "r", encoding="utf-8") as f:
+            with open(jsonl_path, encoding="utf-8") as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if not line:
