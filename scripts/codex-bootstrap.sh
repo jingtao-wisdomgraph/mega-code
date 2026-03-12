@@ -11,10 +11,13 @@ set -euo pipefail
 
 MEGA_DIR="${1:?Usage: codex-bootstrap.sh <MEGA_DIR>}"
 DATA_DIR="${MEGA_CODE_DATA_DIR:-$HOME/.local/share/mega-code}"
-BREADCRUMB="$DATA_DIR/codex-initialized"
+BREADCRUMB="$DATA_DIR/pkg-breadcrumb"
 
 # ── Fast path: already bootstrapped ──────────────────────────────────
-[ -f "$BREADCRUMB" ] && exit 0
+if [ -f "$BREADCRUMB" ]; then
+    saved="$(cat "$BREADCRUMB")"
+    [ -d "$saved" ] && exit 0
+fi
 
 # ── 1. Bootstrap uv if not available ─────────────────────────────────
 if ! command -v uv &>/dev/null; then
@@ -31,9 +34,8 @@ if ! command -v uv &>/dev/null; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
-# ── 2. Create data dir and write plugin-root ─────────────────────────
+# ── 2. Create data dir ────────────────────────────────────────────────
 mkdir -p "$DATA_DIR"
-echo "$MEGA_DIR" > "$DATA_DIR/plugin-root"
 
 # ── 3. Initialize profile.json if absent ─────────────────────────────
 if [ ! -f "$DATA_DIR/profile.json" ]; then
@@ -56,5 +58,5 @@ if [ ! -x "$MEGA_DIR/.venv/bin/python" ]; then
     uv sync --directory "$MEGA_DIR" --quiet 2>/dev/null || true
 fi
 
-# ── 6. Write breadcrumb ──────────────────────────────────────────────
-touch "$BREADCRUMB"
+# ── 6. Write breadcrumb (stores MEGA_DIR path for fast-path check) ───
+echo "$MEGA_DIR" > "$BREADCRUMB"

@@ -55,7 +55,7 @@ def test_unified_setup_block(skill_name):
     if "uv run" not in content:
         pytest.skip(f"{skill_name} does not call uv run")
     assert "CLAUDE_PLUGIN_ROOT" in content, f"{skill_name}: missing CLAUDE_PLUGIN_ROOT"
-    assert "plugin-root" in content, f"{skill_name}: missing plugin-root breadcrumb fallback"
+    assert "pkg-breadcrumb" in content, f"{skill_name}: missing pkg-breadcrumb fallback"
     assert "codex-bootstrap.sh" in content, f"{skill_name}: missing codex-bootstrap.sh"
 
 
@@ -122,8 +122,7 @@ def test_bootstrap_creates_artifacts(tmp_path):
     assert (data_dir / ".env").is_file()
     assert oct((data_dir / ".env").stat().st_mode)[-3:] == "600"
     assert (data_dir / "profile.json").read_text() == "{}"
-    assert (data_dir / "plugin-root").read_text().strip() == str(mega_dir)
-    assert (data_dir / "codex-initialized").is_file()
+    assert (data_dir / "pkg-breadcrumb").read_text().strip() == str(mega_dir)
 
 
 # ── Cycle 8 ───────────────────────────────────────────────────────────
@@ -144,7 +143,7 @@ def test_bootstrap_idempotent(tmp_path):
 
     # First run
     subprocess.run(["bash", str(script), str(mega_dir)], env=env, timeout=60)
-    assert (data_dir / "codex-initialized").is_file()
+    assert (data_dir / "pkg-breadcrumb").read_text().strip() == str(mega_dir)
 
     # Second run — should be fast
     start = time.monotonic()

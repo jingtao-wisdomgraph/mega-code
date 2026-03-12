@@ -12,14 +12,16 @@ Authenticate with MEGA-Code to obtain an API key using a two-step OAuth flow.
 ## Setup
 
 ```bash
-MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/plugin-root 2>/dev/null)}"
+MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/pkg-breadcrumb 2>/dev/null)}"
 if [ -z "$MEGA_DIR" ] || [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
   MEGA_DIR="$HOME/.local/share/mega-code/pkg"
   if [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
-    git clone --depth 1 https://github.com/wisdomgraph/mega-code.git "$MEGA_DIR"
+    rm -rf "$MEGA_DIR"
+    git clone --depth 1 "${MEGA_CODE_REPO_URL:-https://github.com/wisdomgraph/mega-code.git}" "$MEGA_DIR"
   fi
   bash "$MEGA_DIR/scripts/codex-bootstrap.sh" "$MEGA_DIR"
 fi
+export MEGA_CODE_DATA_DIR="$HOME/.local/share/mega-code"
 ```
 
 ## Step 1: Create session (fast, non-blocking)
