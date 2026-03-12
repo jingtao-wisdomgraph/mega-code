@@ -333,9 +333,7 @@ async def main():
             # Check for server-side timeout — exit code 3 tells the run skill
             # to prompt the user with retry/leave options. The JSON on stdout
             # provides run_id and error details the skill needs for its prompt.
-            # NOTE: string match is coupled to server's error format in
-            # pipeline.py: "Pipeline timed out after {N}s"
-            if status.status == "failed" and status.error and "timed out" in status.error.lower():
+            if status.status == "timeout":
                 timeout_info = {
                     "additionalContext": (
                         f"The pipeline timed out on the server ({status.error}).\n"
