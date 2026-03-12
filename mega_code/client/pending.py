@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 import httpx
 import yaml
 
+from mega_code.client.api.protocol import TERMINAL_STATUSES
 from mega_code.client.dirs import data_dir as _data_dir
 
 if TYPE_CHECKING:
@@ -631,7 +632,7 @@ async def poll_pipeline_status(
                 continue
             raise
 
-        if status.status in ("completed", "failed"):
+        if status.status in TERMINAL_STATUSES:
             return status
 
         # Log progress on phase change
