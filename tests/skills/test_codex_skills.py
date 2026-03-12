@@ -41,7 +41,9 @@ def test_unified_skill_frontmatter_valid(skill_name):
     assert "name" in fm, f"{skill_name}: missing 'name' (required for Codex)"
     assert "description" in fm, f"{skill_name}: missing 'description'"
     assert len(fm["description"]) > 0
-    assert "allowed-tools" in fm, f"{skill_name}: missing 'allowed-tools' (required for Claude Code)"
+    assert "allowed-tools" in fm, (
+        f"{skill_name}: missing 'allowed-tools' (required for Claude Code)"
+    )
 
 
 # ── Cycle 3 ───────────────────────────────────────────────────────────
@@ -68,10 +70,12 @@ def test_module_entry_points(skill_name):
     path = SKILLS_DIR / skill_name / "SKILL.md"
     content = path.read_text()
     if "uv run" in content and "python" in content:
-        assert "scripts/run_pipeline_async.py" not in content, \
+        assert "scripts/run_pipeline_async.py" not in content, (
             f"{skill_name}: should use module entry point, not script"
-        assert "scripts/check_pending_skills.py" not in content, \
+        )
+        assert "scripts/check_pending_skills.py" not in content, (
             f"{skill_name}: should use module entry point, not script"
+        )
 
 
 # ── Cycle 5 ───────────────────────────────────────────────────────────
