@@ -22,7 +22,7 @@ skills/help/      -> /mega-code:help / $mega-code-help
 
 hooks/hooks.json   -> SessionStart / SessionEnd / UserPromptSubmit / Stop
 scripts/           -> session-start.sh, check_pending_skills.py,
-                      run_pipeline_async.py, codex-bootstrap.sh
+                      run_pipeline_async.py
 ```
 
 ## Non-negotiable runtime rules

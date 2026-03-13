@@ -8,6 +8,9 @@ to keep the client package self-contained and installable standalone.
 from __future__ import annotations
 
 __all__ = [
+    "ACTIVE_STATUSES",
+    "ERROR_STATUSES",
+    "TERMINAL_STATUSES",
     "ActivePipelineItem",
     "ActivePipelinesResult",
     "MegaCodeBaseClient",
@@ -30,6 +33,24 @@ from typing import Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field
 
 from mega_code.client.models import TurnSet
+
+# =============================================================================
+# Pipeline Run Status Constants
+# =============================================================================
+# All valid statuses: queued → running → completed | failed | timeout | stopped
+#
+# These sets are the single source of truth for status classification.
+# Use them instead of inline tuples to keep poll loops, queries, and
+# branch logic consistent when new statuses are added.
+
+TERMINAL_STATUSES: frozenset[str] = frozenset({"completed", "failed", "timeout", "stopped"})
+"""Pipeline is done — poll loops should exit."""
+
+ACTIVE_STATUSES: frozenset[str] = frozenset({"queued", "running"})
+"""Pipeline is in progress — used for conflict checks and active-run queries."""
+
+ERROR_STATUSES: frozenset[str] = frozenset({"failed", "timeout"})
+"""Pipeline finished with an error — client should report the error field."""
 
 # =============================================================================
 # Pipeline Output Models (inlined from pipeline/store/base.py)
