@@ -27,7 +27,7 @@ if ! command -v uv &>/dev/null; then
 fi
 
 if ! command -v uv &>/dev/null; then
-    curl -LsSf https://astral.sh/uv/install.sh | sh 2>/dev/null
+    curl -LsSf https://astral.sh/uv/install.sh | sh || echo "WARNING: uv install failed — some features may be unavailable"
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
@@ -36,15 +36,9 @@ mkdir -p "$DATA_DIR"
 echo "$MEGA_DIR" > "$DATA_DIR/plugin-root"
 
 # ── 3. Initialize profile.json if absent ──────────────────────────────
+# Write an empty JSON object; UserProfile fields are populated by `mega-code profile`.
 if [ ! -f "$DATA_DIR/profile.json" ]; then
-    cat > "$DATA_DIR/profile.json" << 'EOF'
-{
-  "api_key": "",
-  "server_url": "",
-  "client_mode": "local",
-  "user_id": ""
-}
-EOF
+    printf '{}' > "$DATA_DIR/profile.json"
 fi
 
 # ── 4. Ensure stable credential store exists ──────────────────────────

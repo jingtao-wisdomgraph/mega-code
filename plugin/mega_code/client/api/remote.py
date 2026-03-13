@@ -33,7 +33,7 @@ _AUTH_ERROR_MSG = (
     "Authentication failed ({status} {reason}). Your API key may be invalid or expired.\n"
     "\n"
     "To update your API key, run:\n"
-    "  uv run --directory ~/.claude/mega-code mega-code configure --api-key <your_key>\n"
+    "  mega-code configure --api-key <your_key>\n"
 )
 
 

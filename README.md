@@ -1,7 +1,34 @@
-# MEGA-Code (Open Source Edition)
+# MEGA-Code 1.0.0-beta — Open Source Edition
 
-An open-source Claude Code plugin that collects interaction data, extracts
-reusable skills, and optimizes AI workflows.
+MEGA Code is an AI coding infrastructure where AI agents evolve autonomously
+and developers never stop learning.
+
+## What MEGA Code Does
+
+Today's AI coding agents start every session from zero — same errors, same
+rework, no memory of what worked before. MEGA Code solves this with
+**Compound Intelligence**: automatically capturing high-signal execution logs
+and converting them into durable, reusable knowledge.
+
+### Current Release — Autonomous Skill & Strategy Generation
+
+This first release focuses on the **AI agent evolution** layer:
+
+- **Skills** — Reusable know-how extracted from real coding sessions that agents
+  can execute again and again, eliminating repeated mistakes.
+- **Strategies** — Decision guidance that resurfaces in similar situations,
+  so agents make better choices over time.
+
+The extraction pipeline runs locally, uses your own LLM key (BYOK), and
+produces assets that dramatically lower repeated errors across sessions.
+
+### What's Next
+
+Future releases will add the **developer learning** layer — contextual
+explanations, decision visibility, and structured insight cards that build
+transparent understanding of what AI is doing and why.
+
+> Learn more at **[megacode.ai](https://megacode.ai)**
 
 ## Quick Start
 
@@ -9,12 +36,19 @@ reusable skills, and optimizes AI workflows.
 
 Inside a Claude Code session, run:
 
+**Step 1 — Add the repository to your marketplace:**
+
 ```
-/plugin marketplace add git@bitbucket.org:mindai/mega-code-oss.git
+/plugin marketplace add https://github.com/wisdomgraph/mega-code.git
+```
+
+**Step 2 — Install the plugin:**
+
+```
 /plugin install mega-code@mind-ai-mega-code
 ```
 
-That's it — the plugin's slash commands are immediately available.
+Then restart Claude Code to load the plugin. The slash commands will be available in your next session.
 
 ### Update to Latest Version
 
@@ -49,14 +83,14 @@ Supported providers: **OpenAI** (`OPENAI_API_KEY`) and **Google Gemini** (`GEMIN
 
 ### Available Slash Commands
 
-| Command | Description |
-|---------|-------------|
-| `/mega-code:login` | Sign in via GitHub or Google OAuth |
-| `/mega-code:run` | Run skill extraction pipeline |
-| `/mega-code:status` | Show pending items and status |
-| `/mega-code:feedback` | Provide feedback on generated items |
-| `/mega-code:profile` | View or update your developer profile (language, level, style) |
-| `/mega-code:help` | Show help and reference |
+| Command                 | Description                                                    |
+| ----------------------- | -------------------------------------------------------------- |
+| `/mega-code:login`    | Sign in via GitHub or Google OAuth                             |
+| `/mega-code:run`      | Run skill extraction pipeline                                  |
+| `/mega-code:status`   | Show pending items and status                                  |
+| `/mega-code:feedback` | Provide feedback on generated items                            |
+| `/mega-code:profile`  | View or update your developer profile (language, level, style) |
+| `/mega-code:help`     | Show help and reference                                        |
 
 ### Example Usage
 
@@ -80,7 +114,7 @@ bash scripts/setup-oss-test.sh
 
 # This syncs skills/, hooks/, client code, and installs deps.
 # Then test locally with:
-claude --plugin-dir mega-code-oss/plugin
+claude --plugin-dir mega-code-github/plugin
 ```
 
 The sync script copies the latest code from the main repo into this submodule
@@ -89,7 +123,7 @@ so you can iterate quickly without any git commits to GitHub.
 ## Project Structure
 
 ```
-mega-code-oss/
+mega-code-github/
 ├── .claude-plugin/
 │   └── marketplace.json     # Marketplace listing (source: ./plugin)
 ├── plugin/                  # Plugin root (installed by Claude Code)
@@ -116,6 +150,14 @@ mega-code-oss/
 
 Configuration is stored in `~/.local/mega-code/` and persists across sessions.
 Use `/mega-code:login` to authenticate, or `mega-code configure` CLI for advanced settings.
+
+## Terms of Service
+
+This plugin requires use of the Mega Code API.
+
+By using this plugin, you agree to:
+
+https://megacode.ai/terms
 
 ## License
 

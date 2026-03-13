@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10,<3.14"
 license = "MIT"
 authors = [
-    { name = "WisdomGraph", email = "support@megacode.ai" }
+    { name = "Mind AI", email = "support@megacode.ai" }
 ]
 keywords = ["claude-code", "plugin", "skills", "optimization", "data-collection"]
 classifiers = [

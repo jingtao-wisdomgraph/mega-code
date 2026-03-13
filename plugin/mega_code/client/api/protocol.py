@@ -1,8 +1,8 @@
 """Client protocol and response models for the MEGA-Code API.
 
-All models use Pydantic — zero enterprise dependencies.
-Pipeline store models (PendingSkillData, etc.) are inlined here
-to avoid importing from mega_code.pipeline.store.base.
+All models use Pydantic with no server-side dependencies.
+Pipeline output models (PendingSkillData, etc.) are defined here
+to keep the client package self-contained and installable standalone.
 """
 
 from __future__ import annotations
@@ -199,8 +199,8 @@ class MegaCodeBaseClient(Protocol):
     """Client protocol for interacting with the MEGA-Code system.
 
     Implementations:
-    - MegaCodeLocal: In-process via PipelineStore (enterprise only)
-    - MegaCodeRemote: HTTP client to FastAPI server
+    - MegaCodeRemote: HTTP client to a MEGA-Code FastAPI server
+    - MegaCodeLocal: In-process implementation for server-side use
     """
 
     def upload_trajectory(
