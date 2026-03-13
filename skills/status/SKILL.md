@@ -12,7 +12,11 @@ Show current MEGA-Code status and pending items.
 ## Setup
 
 ```bash
-MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/plugin-root 2>/dev/null)}"
+if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
+  MEGA_DIR="$CLAUDE_PLUGIN_ROOT"
+else
+  MEGA_DIR="$(cat ~/.local/share/mega-code/pkg-breadcrumb 2>/dev/null)"
+fi
 if [ -z "$MEGA_DIR" ] || [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
   MEGA_DIR="$HOME/.local/share/mega-code/pkg"
   if [ ! -f "$MEGA_DIR/pyproject.toml" ]; then

@@ -32,7 +32,11 @@ scripts/           -> session-start.sh, check_pending_skills.py,
 Every skill that runs `uv` must use the unified setup block:
 
 ```bash
-MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/plugin-root 2>/dev/null)}"
+if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
+  MEGA_DIR="$CLAUDE_PLUGIN_ROOT"
+else
+  MEGA_DIR="$(cat ~/.local/share/mega-code/pkg-breadcrumb 2>/dev/null)"
+fi
 if [ -z "$MEGA_DIR" ] || [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
   MEGA_DIR="$HOME/.local/share/mega-code/pkg"
   if [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
@@ -43,9 +47,9 @@ if [ -z "$MEGA_DIR" ] || [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
 fi
 ```
 
-- Claude Code: `CLAUDE_PLUGIN_ROOT` is set by the runtime, first line resolves immediately, bootstrap skipped.
-- Codex (first run): env var unset, breadcrumb empty, clones + bootstraps, `codex-bootstrap.sh` writes `plugin-root`.
-- Codex (subsequent): `plugin-root` breadcrumb resolves, bootstrap skipped.
+- Claude Code: `CLAUDE_PLUGIN_ROOT` is set by the runtime, resolves immediately, bootstrap skipped.
+- Codex (first run): env var unset, `pkg-breadcrumb` empty, clones + bootstraps, `codex-bootstrap.sh` writes `pkg-breadcrumb`.
+- Codex (subsequent): `pkg-breadcrumb` resolves, bootstrap skipped.
 
 Every `uv run` command must include:
 
