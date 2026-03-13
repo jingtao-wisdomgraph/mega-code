@@ -591,6 +591,10 @@ async def poll_pipeline_status(
             max_retries consecutive transient errors.
         httpx.NetworkError: After max_retries consecutive network failures.
     """
+    _server = getattr(client, "server_url", None)
+    if _server:
+        logger.info(f"Polling: {_server}/api/megacode/v1/pipeline/status/{run_id}")
+
     start = time.monotonic()
     last_phase = ""
     consecutive_errors = 0

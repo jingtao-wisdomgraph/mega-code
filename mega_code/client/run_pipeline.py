@@ -326,12 +326,20 @@ async def main():
             # Trigger or poll existing pipeline
             if args.poll_existing:
                 run_id = args.poll_existing
+                _server = getattr(client, "server_url", None)
                 logger.info(f"Polling existing pipeline: run_id={run_id}")
+                if _server:
+                    logger.info(f"Polling URL: {_server}/api/megacode/v1/pipeline/status/{run_id}")
             else:
                 logger.info("Triggering pipeline via client...")
+                _server = getattr(client, "server_url", None)
+                if _server:
+                    logger.info(f"POST {_server}/api/megacode/v1/pipeline/run")
                 trigger_result = await client.trigger_pipeline_run(**trigger_kwargs)
                 run_id = trigger_result.run_id
                 logger.info(f"Pipeline triggered: run_id={run_id}, status={trigger_result.status}")
+                if _server:
+                    logger.info(f"Polling URL: {_server}/api/megacode/v1/pipeline/status/{run_id}")
 
             # Poll for completion
             status = await poll_pipeline_status(client, run_id, timeout=poll_timeout)
