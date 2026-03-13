@@ -56,8 +56,8 @@ def test_unified_setup_block(skill_name):
     content = path.read_text()
     if "uv run" not in content:
         pytest.skip(f"{skill_name} does not call uv run")
-    assert "MEGA_CODE_PLUGIN_ROOT" in content, f"{skill_name}: missing MEGA_CODE_PLUGIN_ROOT"
-    assert "pkg-breadcrumb" in content, f"{skill_name}: missing pkg-breadcrumb fallback"
+    assert "CLAUDE_PLUGIN_ROOT" in content, f"{skill_name}: missing CLAUDE_PLUGIN_ROOT primary"
+    assert "plugin-root" in content, f"{skill_name}: missing plugin-root breadcrumb fallback"
     assert "codex-bootstrap.sh" in content, f"{skill_name}: missing codex-bootstrap.sh"
 
 

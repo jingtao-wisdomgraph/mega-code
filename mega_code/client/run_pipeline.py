@@ -235,7 +235,11 @@ async def main():
 
     # Get environment variables
     session_id = args.session_id or os.environ.get("MEGA_CODE_SESSION_ID")
-    project_dir_env = Path(os.environ.get("MEGA_CODE_PROJECT_DIR", ".")).resolve()
+    # MEGA_CODE_PROJECT_DIR is set by skills; CLAUDE_PROJECT_DIR by Claude Code.
+    project_dir_env = Path(
+        os.environ.get("MEGA_CODE_PROJECT_DIR")
+        or os.environ.get("CLAUDE_PROJECT_DIR", ".")
+    ).resolve()
     storage = args.storage or os.environ.get("MEGA_CODE_PIPELINE_STORAGE", "local")
 
     # Determine execution mode
