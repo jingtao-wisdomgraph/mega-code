@@ -179,11 +179,17 @@ class MegaCodeRemote:
         model: str | None = None,
         include_claude: bool = False,
         include_codex: bool = False,
+        project_cwd: str | None = None,
     ) -> TriggerPipelineResult:
         """Trigger pipeline run via POST /api/megacode/v1/pipeline/run.
 
         If project_path is given, syncs local trajectories to the server
         first via sync_trajectories(), then triggers the pipeline.
+
+        Args:
+            project_cwd: The actual working directory (e.g. /tmp/test-project).
+                Used for Codex session path matching. Falls back to
+                project_path if not provided.
         """
         # Sync local sessions to server if project_path provided.
         # sync_trajectories is sync (uses self._client internally),
@@ -201,8 +207,12 @@ class MegaCodeRemote:
         if include_codex and project_path is not None:
             from mega_code.client.api.codex_sync import sync_codex_trajectories
 
+            # Use the actual project CWD for codex session matching, not the
+            # mega-code data dir. The codex sessions record the real working
+            # directory in their 'cwd' field.
+            codex_match_path = project_cwd or str(project_path)
             await asyncio.to_thread(
-                sync_codex_trajectories, project_path, self, project_id, str(project_path)
+                sync_codex_trajectories, project_path, self, project_id, codex_match_path
             )
 
         payload = {

@@ -237,8 +237,7 @@ async def main():
     session_id = args.session_id or os.environ.get("MEGA_CODE_SESSION_ID")
     # MEGA_CODE_PROJECT_DIR is set by skills; CLAUDE_PROJECT_DIR by Claude Code.
     project_dir_env = Path(
-        os.environ.get("MEGA_CODE_PROJECT_DIR")
-        or os.environ.get("CLAUDE_PROJECT_DIR", ".")
+        os.environ.get("MEGA_CODE_PROJECT_DIR") or os.environ.get("CLAUDE_PROJECT_DIR", ".")
     ).resolve()
     storage = args.storage or os.environ.get("MEGA_CODE_PIPELINE_STORAGE", "local")
 
@@ -294,6 +293,9 @@ async def main():
                 "include_codex": include_codex,
                 "model": model_name,
             }
+
+            if include_codex:
+                trigger_kwargs["project_cwd"] = str(project_dir_env)
 
             if resolved_session_id:
                 trigger_kwargs["session_id"] = resolved_session_id
