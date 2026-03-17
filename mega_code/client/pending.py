@@ -668,6 +668,14 @@ async def poll_pipeline_status(
                 processed,
                 total,
             )
+            # Periodic trace flush for real-time visibility
+            try:
+                from mega_code.client.utils.ndjson_tracing import flush_traces
+                from mega_code.client.utils.tracing import get_span_writer
+
+                flush_traces(writer=get_span_writer())
+            except Exception:
+                pass
 
         if status.status in TERMINAL_STATUSES:
             logger.info(

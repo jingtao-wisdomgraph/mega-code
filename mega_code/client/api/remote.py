@@ -254,8 +254,21 @@ class MegaCodeRemote:
         if model is not None:
             payload["model"] = model
 
+        # Propagate trace context via W3C traceparent header
+        extra_headers: dict[str, str] = {}
+        try:
+            from mega_code.client.utils.tracing import get_current_trace_context
+
+            traceparent = get_current_trace_context()
+            if traceparent:
+                extra_headers["traceparent"] = traceparent
+        except Exception:
+            pass
+
         async_client = self._get_async_client()
-        resp = await async_client.post("/api/megacode/v1/pipeline/run", json=payload)
+        resp = await async_client.post(
+            "/api/megacode/v1/pipeline/run", json=payload, headers=extra_headers
+        )
         self._check_response(resp)
         return TriggerPipelineResult(**resp.json())
 

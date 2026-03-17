@@ -201,10 +201,11 @@ async def main():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    # Setup tracing
+    # Setup tracing (opt-in via MEGA_CODE_TRACING env var)
     from mega_code.client.utils.tracing import get_tracer, setup_tracing
 
-    setup_tracing(service_name="mega-code-client")
+    session_id = args.session_id or os.environ.get("MEGA_CODE_SESSION_ID")
+    setup_tracing(service_name="mega-code-client", session_id=session_id)
     tracer = get_tracer(__name__)
 
     # Imports (deferred to avoid import cost when --env-debug is used)
@@ -234,7 +235,7 @@ async def main():
     include_codex = args.include_codex or args.include_all
 
     # Get environment variables
-    session_id = args.session_id or os.environ.get("MEGA_CODE_SESSION_ID")
+    # session_id already resolved above for tracing setup
     # MEGA_CODE_PROJECT_DIR is set by skills; CLAUDE_PROJECT_DIR by Claude Code.
     project_dir_env = Path(
         os.environ.get("MEGA_CODE_PROJECT_DIR") or os.environ.get("CLAUDE_PROJECT_DIR", ".")
@@ -423,6 +424,16 @@ async def main():
             output = {"additionalContext": notification.strip()}
             print(json.dumps(output))
             sys.exit(1)
+
+        finally:
+            # Export accumulated trace spans (best-effort)
+            try:
+                from mega_code.client.utils.ndjson_tracing import export_traces
+                from mega_code.client.utils.tracing import get_span_writer
+
+                export_traces(writer=get_span_writer())
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":
