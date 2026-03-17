@@ -247,10 +247,36 @@ async def main():
     logger.info(f"Execution mode: {mode}")
 
     with tracer.start_as_current_span("run_pipeline") as span:
+        # --- Environment snapshot ---
+        span.set_attribute("env.MEGA_CODE_PROJECT_DIR", os.environ.get("MEGA_CODE_PROJECT_DIR", ""))
+        span.set_attribute("env.CLAUDE_PROJECT_DIR", os.environ.get("CLAUDE_PROJECT_DIR", ""))
+        span.set_attribute("env.MEGA_CODE_SESSION_ID", os.environ.get("MEGA_CODE_SESSION_ID", ""))
+        span.set_attribute("env.MEGA_CODE_CLIENT_MODE", os.environ.get("MEGA_CODE_CLIENT_MODE", ""))
+        span.set_attribute("env.MEGA_CODE_API_KEY_SET", bool(os.environ.get("MEGA_CODE_API_KEY")))
+        span.set_attribute("env.MEGA_CODE_SERVER_URL", os.environ.get("MEGA_CODE_SERVER_URL", ""))
+        span.set_attribute("env.MEGA_CODE_PIPELINE_STORAGE", os.environ.get("MEGA_CODE_PIPELINE_STORAGE", ""))
+        span.set_attribute("env.MEGA_CODE_POLL_TIMEOUT", os.environ.get("MEGA_CODE_POLL_TIMEOUT", ""))
+
+        # --- CLI args ---
+        span.set_attribute("args.project", str(args.project) if args.project is not None else "")
+        span.set_attribute("args.session_id", args.session_id or "")
+        span.set_attribute("args.model", args.model or "")
+        span.set_attribute("args.mode", args.mode or "auto")
+        span.set_attribute("args.storage", args.storage or "")
+        span.set_attribute("args.force", args.force)
+        span.set_attribute("args.limit", args.limit or 0)
+        span.set_attribute("args.steps", ",".join(args.steps) if args.steps else "")
+        span.set_attribute("args.concurrency", args.concurrency)
+        span.set_attribute("args.include_claude", include_claude)
+        span.set_attribute("args.include_codex", include_codex)
+        span.set_attribute("args.poll_existing", args.poll_existing or "")
+
+        # --- Resolved values ---
         span.set_attribute("pipeline.mode", mode)
-        span.set_attribute("pipeline.model", model_name)
+        span.set_attribute("pipeline.model", model_name or "")
         span.set_attribute("pipeline.session_id", session_id or "")
         span.set_attribute("pipeline.storage", storage)
+        span.set_attribute("pipeline.project_dir_env", str(project_dir_env))
 
         try:
             # Resolve project directory
@@ -261,6 +287,7 @@ async def main():
 
             project_id = mega_code_project_dir.name
             span.set_attribute("pipeline.project_dir", str(mega_code_project_dir))
+            span.set_attribute("pipeline.project_id", project_id)
 
             # Determine session_id or project_path for trigger
             resolved_session_id: str | None = None
@@ -282,6 +309,10 @@ async def main():
                 client_kwargs["project_id"] = project_id
             client = create_client(mode=mode, **client_kwargs)
             logger.info(f"Client: {type(client).__name__} (mode={mode})")
+            span.set_attribute("pipeline.client_type", type(client).__name__)
+            _server = getattr(client, "server_url", None)
+            if _server:
+                span.set_attribute("pipeline.server_url", _server)
 
             # Build trigger kwargs
             trigger_kwargs: dict = {
@@ -302,6 +333,20 @@ async def main():
                 trigger_kwargs["session_id"] = resolved_session_id
             elif resolved_project_path:
                 trigger_kwargs["project_path"] = resolved_project_path
+
+            # Record full trigger payload as span attributes
+            span.set_attribute("trigger.project_id", project_id)
+            span.set_attribute("trigger.session_id", resolved_session_id or "")
+            span.set_attribute("trigger.project_path", str(resolved_project_path or ""))
+            span.set_attribute("trigger.force", args.force)
+            span.set_attribute("trigger.limit", args.limit or 0)
+            span.set_attribute("trigger.concurrency", args.concurrency)
+            span.set_attribute("trigger.steps", ",".join(args.steps) if args.steps else "all")
+            span.set_attribute("trigger.model", model_name or "server-default")
+            span.set_attribute("trigger.include_claude", include_claude)
+            span.set_attribute("trigger.include_codex", include_codex)
+            if include_codex:
+                span.set_attribute("trigger.project_cwd", str(project_dir_env))
 
             # Validate and resolve poll timeout before triggering (fail fast)
             if args.poll_timeout is not None and args.poll_timeout < 0:
@@ -339,11 +384,26 @@ async def main():
                 trigger_result = await client.trigger_pipeline_run(**trigger_kwargs)
                 run_id = trigger_result.run_id
                 logger.info(f"Pipeline triggered: run_id={run_id}, status={trigger_result.status}")
+                span.set_attribute("trigger.response.run_id", run_id)
+                span.set_attribute("trigger.response.status", trigger_result.status)
+                span.set_attribute("trigger.response.message", getattr(trigger_result, "message", ""))
                 if _server:
                     logger.info(f"Polling URL: {_server}/api/megacode/v1/pipeline/status/{run_id}")
 
             # Poll for completion
+            span.set_attribute("poll.timeout_seconds", poll_timeout or 0)
+            span.set_attribute("poll.run_id", run_id)
             status = await poll_pipeline_status(client, run_id, timeout=poll_timeout)
+            span.set_attribute("poll.final_status", status.status)
+            span.set_attribute("poll.error", status.error or "")
+            if status.started_at:
+                span.set_attribute("poll.server_started_at", status.started_at)
+            if status.completed_at:
+                span.set_attribute("poll.server_completed_at", status.completed_at)
+            if status.progress:
+                span.set_attribute("poll.sessions_processed", status.progress.get("sessions_processed", 0))
+                span.set_attribute("poll.sessions_total", status.progress.get("sessions_total", 0))
+                span.set_attribute("poll.current_phase", status.progress.get("current_phase", ""))
 
             # Check for server-side timeout — exit code 3 tells the run skill
             # to prompt the user with retry/leave options. The JSON on stdout
@@ -378,6 +438,19 @@ async def main():
             span.set_attribute("pipeline.skills_count", result.skill_count)
             span.set_attribute("pipeline.strategies_count", result.strategy_count)
             span.set_attribute("pipeline.lessons_count", result.lesson_count)
+            span.set_attribute("pipeline.total_outputs", result.total_count)
+            span.set_attribute("pipeline.has_outputs", result.has_outputs())
+            span.set_attribute("pipeline.run_id", result.run_id)
+            # Record individual skill/strategy names for easy filtering
+            if result.skills:
+                span.set_attribute("output.skill_names", ",".join(s.name for s in result.skills))
+                span.set_attribute("output.skill_paths", ",".join(s.path for s in result.skills))
+            if result.strategies:
+                span.set_attribute("output.strategy_names", ",".join(s.name for s in result.strategies))
+            if result.lessons:
+                span.set_attribute("output.lesson_slugs", ",".join(ls.slug for ls in result.lessons))
+            if result.errors:
+                span.set_attribute("output.errors", ",".join(result.errors))
 
             # Format and output notification
             notification = format_pipeline_notification(result)

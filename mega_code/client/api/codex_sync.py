@@ -26,22 +26,16 @@ def sync_codex_trajectories(
     project_id: str,
     project_path: str,
 ) -> int:
-    """Upload Codex CLI sessions matching the project path to the server.
-
-    Compares discovered Codex session files against codex-sync-ledger.json.
-    Uploads any sessions not yet in the ledger or with changed mtime.
-
-    Args:
-        project_dir: Local mega-code project data folder
-            (e.g. ~/.local/share/mega-code/projects/mega-code_b39e0992/).
-        client: Authenticated client (typically MegaCodeRemote).
-        project_id: Project identifier for the server.
-        project_path: Actual project cwd for Codex filtering.
-
-    Returns:
-        Number of newly uploaded sessions.
-    """
+    """Upload Codex CLI sessions matching the project path to the server."""
     from mega_code.client.history.sources.codex import CodexSource
+    from mega_code.client.utils.tracing import get_tracer
+
+    tracer = get_tracer(__name__)
+    span_ctx = tracer.start_as_current_span("sync.discover_codex_sessions")
+    span = span_ctx.__enter__()
+    span.set_attribute("sync.project_dir", str(project_dir))
+    span.set_attribute("sync.project_id", project_id)
+    span.set_attribute("sync.project_path", project_path)
 
     logger.info("Codex sync: matching sessions against project_path=%s", project_path)
 
@@ -49,6 +43,7 @@ def sync_codex_trajectories(
     codex_source = CodexSource()
     matching_entries = list(codex_source.iter_sessions_by_project_paths([project_path]))
 
+    span.set_attribute("sync.codex_matched_count", len(matching_entries))
     logger.info(
         "Codex sync: %d session(s) matched project_path=%s", len(matching_entries), project_path
     )
@@ -65,6 +60,9 @@ def sync_codex_trajectories(
                     all_cwds.append(cwd)
             except Exception:
                 pass
+        span.set_attribute("sync.codex_all_cwds", ",".join(all_cwds[:20]))
+        span.set_attribute("sync.codex_total_sessions", len(all_cwds))
+        span_ctx.__exit__(None, None, None)
         logger.info(
             "Codex sync: 0 matches — total sessions found: %d, cwds: %s",
             len(all_cwds),
@@ -113,6 +111,9 @@ def sync_codex_trajectories(
             return turn_set
 
         sessions.append((codex_session_id, _make_loader))
+
+    span.set_attribute("sync.codex_sessions_to_process", len(sessions))
+    span_ctx.__exit__(None, None, None)
 
     def _needs_resync(sid: str, existing: dict) -> bool:
         return existing.get("file_mtime") != mtime_map.get(sid)
