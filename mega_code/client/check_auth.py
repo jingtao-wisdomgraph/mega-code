@@ -11,6 +11,8 @@ from __future__ import annotations
 import os
 import sys
 
+import httpx
+
 from mega_code.client.cli import get_env_path, load_env_file
 
 _NOT_LOGGED_IN = "Not logged in. Run /mega-code:login first."
@@ -45,8 +47,15 @@ def check_auth() -> bool:
         return False
 
 
+_SERVER_UNREACHABLE = "Cannot reach authentication server. Check your connection."
+
+
 def main() -> int:
-    return 0 if check_auth() else 1
+    try:
+        return 0 if check_auth() else 1
+    except (httpx.ConnectError, httpx.TimeoutException):
+        print(_SERVER_UNREACHABLE)
+        return 1
 
 
 if __name__ == "__main__":
