@@ -39,6 +39,7 @@ HF Upskill       ████████████████░░░░  7
 anthropic-skill  █████████████████░░░  826K
 Baseline         ██████████████████░░  897K
 skill-factory    ██████████████████████████████  1,448K
+skill-builder    ██████████████████████████████████████████  2,024K
 ```
 
 ### Combined Score
@@ -48,6 +49,7 @@ MEGA Code        ████████████████  78%   ← #1
 HF Upskill       ██████████████░░  70%
 anthropic-skill  █████████████░░░  65%
 Baseline         █████████████░░░  65%
+skill-builder    ██████████░░░░░░  50%
 skill-factory    █████████░░░░░░░  43%
 ```
 
@@ -112,7 +114,7 @@ Core learning, exports, and Skills/Strategies capture are available in the curre
 | `/mega-code:login` | Sign in via GitHub or Google OAuth |
 | `/mega-code:run` | Run skill extraction pipeline |
 | `/mega-code:status` | Show pending items and status |
-| `/mega-code:feedback` | Provide feedback on generated items |
+| `/mega-code:stop` | Stop a running pipeline |
 | `/mega-code:profile` | View or update your developer profile (language, level, style) |
 | `/mega-code:help` | Show help and reference |
 
@@ -123,7 +125,7 @@ Core learning, exports, and Skills/Strategies capture are available in the curre
 /mega-code:profile                # Set your language, level, and style
 /mega-code:run --project          # Extract skills from all project sessions
 /mega-code:status                 # See what was generated
-/mega-code:feedback               # Rate the generated skills
+/mega-code:stop                   # Stop a pipeline if needed
 ```
 
 ---
@@ -167,7 +169,7 @@ plugin/
 │   ├── login/SKILL.md       # /mega-code:login
 │   ├── run/SKILL.md         # /mega-code:run
 │   ├── status/SKILL.md      # /mega-code:status
-│   ├── feedback/SKILL.md    # /mega-code:feedback
+│   ├── stop/SKILL.md        # /mega-code:stop
 │   ├── profile/SKILL.md     # /mega-code:profile
 │   └── help/SKILL.md        # /mega-code:help
 ├── mega_code/
