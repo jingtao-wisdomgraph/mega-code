@@ -9,20 +9,20 @@ allowed-tools: Read
 
 ## Available Commands
 
-| Claude Code | Codex | Description |
-|-------------|-------|-------------|
-| `/mega-code:login` | `$mega-code-login` | Sign in via GitHub or Google OAuth |
-| `/mega-code:run` | `$mega-code-run` | Run skill extraction pipeline |
-| `/mega-code:status` | `$mega-code-status` | Show pending items and status |
-| `/mega-code:profile` | `$mega-code-profile` | View or update developer profile |
-| `/mega-code:help` | `$mega-code-help` | Show this help |
+| Command | Description |
+|---------|-------------|
+| `$mega-code-login` | Sign in via GitHub or Google OAuth |
+| `$mega-code-run` | Run skill extraction pipeline |
+| `$mega-code-status` | Show pending items and status |
+| `$mega-code-profile` | View or update developer profile |
+| `$mega-code-help` | Show this help |
 
 ## Output Locations
 
-| Type | Pending Location | Installed (Claude Code) | Installed (Codex) |
-|------|------------------|------------------------|-------------------|
-| Skills | `~/.local/share/mega-code/data/pending-skills/{name}/` | `.claude/skills/{name}/SKILL.md` | `.agents/skills/{name}/SKILL.md` |
-| Strategies | `~/.local/share/mega-code/data/pending-strategies/{name}.md` | `.claude/rules/mega-code/{name}.md` | `.agents/rules/mega-code/{name}.md` |
+| Type | Pending Location | Installed Location |
+|------|------------------|--------------------|
+| Skills | `~/.local/share/mega-code/data/pending-skills/{name}/` | `.agents/skills/{name}/SKILL.md` |
+| Strategies | `~/.local/share/mega-code/data/pending-strategies/{name}.md` | `.agents/rules/mega-code/{name}.md` |
 
 ## Skill Structure
 
@@ -68,4 +68,4 @@ When no model is specified, the server selects the best model based on your conf
 - Use `@name` to run on a different project without switching directories
 - Skills with more evidence (from multiple sessions) are higher quality
 - Review and edit skills before installing for best results
-- For plugin updates, use `/plugin marketplace update mind-ai-mega-code` (Claude Code)
+- For updates, run: `npx skills add wisdomgraph/mega-code -a codex`

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MEGA-Code CLI - Manage mega-code plugin for Claude Code.
+MEGA-Code CLI - Manage mega-code plugin for Codex CLI.
 
 Usage:
     mega-code status
@@ -8,7 +8,7 @@ Usage:
     mega-code login [--provider github|google]
     mega-code profile [--language <lang>] [--level <level>] [--style <style>]
 
-Installation is handled via Claude Code marketplace plugin.
+Installation is handled via Codex CLI: npx skills add wisdomgraph/mega-code -a codex
 """
 
 import argparse
@@ -34,23 +34,14 @@ def _get_plugin_root() -> Path | None:
     """Get the plugin root directory.
 
     Priority:
-    1. CLAUDE_PLUGIN_ROOT environment variable (set by Claude Code)
-    2. Breadcrumb file <data_dir>/plugin-root (Claude Code)
-    3. Breadcrumb file <data_dir>/pkg-breadcrumb (Codex)
-    4. None if not found
+    1. Breadcrumb file <data_dir>/pkg-breadcrumb (Codex CLI)
+    2. None if not found
     """
-    # Check env var first (available inside Claude Code hook execution)
-    env_root = os.environ.get("CLAUDE_PLUGIN_ROOT")
-    if env_root:
-        return Path(env_root)
-
-    # Check breadcrumbs: plugin-root (Claude Code), pkg-breadcrumb (Codex)
-    for name in ("plugin-root", "pkg-breadcrumb"):
-        breadcrumb = get_data_dir() / name
-        if breadcrumb.exists():
-            root = breadcrumb.read_text().strip()
-            if root and Path(root).is_dir():
-                return Path(root)
+    breadcrumb = get_data_dir() / "pkg-breadcrumb"
+    if breadcrumb.exists():
+        root = breadcrumb.read_text().strip()
+        if root and Path(root).is_dir():
+            return Path(root)
 
     return None
 
@@ -377,7 +368,7 @@ def main():
     """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(
         prog="mega-code",
-        description="MEGA-Code CLI - Manage mega-code plugin for Claude Code",
+        description="MEGA-Code CLI - Manage mega-code plugin for Codex CLI",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")

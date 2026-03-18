@@ -155,22 +155,17 @@ class TestIncludeFlagMatrix:
     """Cycle 4: Parameterized flag combinations."""
 
     @pytest.mark.parametrize(
-        "include_claude,include_codex,expect_codex",
+        "include_codex,expect_codex",
         [
-            (False, False, False),
-            (False, True, True),
-            (True, False, False),
-            (True, True, True),
+            (False, False),
+            (True, True),
         ],
     )
-    def test_include_flag_matrix(
-        self, codex_base, tmp_path, include_claude, include_codex, expect_codex
-    ):
+    def test_include_flag_matrix(self, codex_base, tmp_path, include_codex, expect_codex):
         shutil.copy2(FIXTURES_DIR / "golden_session.jsonl", codex_base / "s1.jsonl")
 
         with (
             patch("mega_code.client.history.loader.MegaCodeSource") as MockMegaSource,
-            patch("mega_code.client.history.loader.ClaudeNativeSource") as MockClaudeSource,
             patch(
                 "mega_code.client.history.sources.codex.CodexSource",
                 return_value=CodexSource(base_path=codex_base),
@@ -178,12 +173,9 @@ class TestIncludeFlagMatrix:
         ):
             mock_source = MockMegaSource.return_value
             mock_source.iter_sessions_from_path.return_value = iter([])
-            mock_claude = MockClaudeSource.return_value
-            mock_claude.iter_sessions_by_project_paths.return_value = iter([])
 
             result = load_sessions_from_project(
                 project_path=Path("/home/user/projects/test-project"),
-                include_claude=include_claude,
                 include_codex=include_codex,
             )
 

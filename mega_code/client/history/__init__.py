@@ -1,10 +1,10 @@
-"""Claude Code historical data loading and analysis.
+"""Historical session data loading and analysis.
 
-This module provides a unified interface for loading Claude Code
-conversation data from multiple sources:
+This module provides a unified interface for loading coding session
+data from multiple sources:
 
-- Claude Code native storage (~/.claude/projects/)
 - MEGA-Code collector storage (~/.local/share/mega-code/)
+- Codex CLI sessions
 - Parquet datasets (ZAI CC-Bench, NLILE, etc.)
 
 Example:
@@ -28,7 +28,7 @@ Example:
         print(f"  Tool calls: {session.stats.tool_call_count}")
 
     # Load specific session
-    session = loader.load_from("claude_native", "abc123-...")
+    session = loader.load_from("mega_code", "abc123-...")
 """
 
 from mega_code.client.history.loader import (
@@ -47,7 +47,6 @@ from mega_code.client.history.models import (
 )
 from mega_code.client.history.protocol import DataSource
 from mega_code.client.history.sources import (
-    ClaudeNativeSource,
     CodexSource,
     CursorSource,
     GeminiSource,
@@ -58,7 +57,6 @@ from mega_code.client.history.sources import (
 
 __all__ = [
     # Sources
-    "ClaudeNativeSource",
     "CodexSource",
     "CursorSource",
     "DataLoader",

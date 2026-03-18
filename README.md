@@ -57,28 +57,16 @@ skill-factory    █████████░░░░░░░  43%
 
 ## Quick Start
 
-### Step 1 — Install the plugin
+### Step 1 — Install
 
-**Claude Code**
-
-In a Claude Code session, run:
-
+```bash
+npx skills add wisdomgraph/mega-code -a codex
 ```
-/plugin marketplace add https://github.com/wisdomgraph/mega-code
-```
-
-**Step 2 — Install the plugin:**
-
-```
-/plugin install mega-code@mind-ai-mega-code
-```
-
-Restart Claude Code to load the plugin.
 
 ### Step 2 — Sign in
 
 ```
-/mega-code:login
+$mega-code-login
 ```
 
 Authenticates via GitHub or Google. Your API key is saved automatically.
@@ -92,8 +80,8 @@ Visit [console.megacode.ai](https://console.megacode.ai) → **Account → API K
 ### Step 4 — Run in any project
 
 ```
-/mega-code:run                    # Extract skills from your sessions
-/mega-code:status                 # Check results
+$mega-code-run                    # Extract skills from your sessions
+$mega-code-status                 # Check results
 ```
 
 ---
@@ -109,34 +97,24 @@ Core learning, exports, and Skills/Strategies capture are available in the curre
 
 | Command | Description |
 |---|---|
-| `/mega-code:login` | Sign in via GitHub or Google OAuth |
-| `/mega-code:run` | Run skill extraction pipeline |
-| `/mega-code:status` | Show pending items and status |
-| `/mega-code:feedback` | Provide feedback on generated items |
-| `/mega-code:profile` | View or update your developer profile (language, level, style) |
-| `/mega-code:help` | Show help and reference |
+| `$mega-code-login` | Sign in via GitHub or Google OAuth |
+| `$mega-code-run` | Run skill extraction pipeline |
+| `$mega-code-status` | Show pending items and status |
+| `$mega-code-profile` | View or update your developer profile (language, level, style) |
+| `$mega-code-help` | Show help and reference |
 
 ### Example Session
 
 ```bash
-/mega-code:login                  # Sign in (first time)
-/mega-code:profile                # Set your language, level, and style
-/mega-code:run --project          # Extract skills from all project sessions
-/mega-code:status                 # See what was generated
-/mega-code:feedback               # Rate the generated skills
+$mega-code-login                  # Sign in (first time)
+$mega-code-profile                # Set your language, level, and style
+$mega-code-run --project          # Extract skills from all project sessions
+$mega-code-status                 # See what was generated
 ```
 
 ---
 
 ## Update
-
-**Claude Code:**
-
-```
-/plugin marketplace update mind-ai-mega-code
-```
-
-**Codex CLI:**
 
 ```bash
 npx skills add wisdomgraph/mega-code -a codex
@@ -144,55 +122,10 @@ npx skills add wisdomgraph/mega-code -a codex
 
 ---
 
-## Development Setup (from main repo)
-
-If you are developing from the main `mega-code` repository (which includes this
-as a submodule), use the sync script to test changes without committing:
-
-```bash
-# From the main mega-code repo root:
-bash scripts/setup-oss-test.sh
-
-# This syncs skills/, hooks/, client code, and installs deps.
-# Then test locally with:
-claude --plugin-dir mega-code-oss/plugin
-```
-
-The sync script copies the latest code from the main repo into this submodule
-so you can iterate quickly without any git commits to GitHub.
-
-## Project Structure
-
-```
-plugin/
-├── .claude-plugin/
-│   └── marketplace.json     # Marketplace listing (source: ./plugin)
-├── plugin/                  # Plugin root (installed by Claude Code)
-│   ├── .claude-plugin/
-│   │   └── plugin.json      # Plugin metadata
-│   ├── hooks/
-│   │   └── hooks.json       # Lifecycle hooks (SessionStart, etc.)
-│   ├── skills/              # Unified skills (Claude Code + Codex)
-│   │   ├── login/SKILL.md    # /mega-code:login / $mega-code-login
-│   │   ├── run/SKILL.md      # /mega-code:run / $mega-code-run
-│   │   ├── status/SKILL.md   # /mega-code:status / $mega-code-status
-│   │   ├── feedback/SKILL.md # /mega-code:feedback
-│   │   ├── profile/SKILL.md  # /mega-code:profile / $mega-code-profile
-│   │   └── help/SKILL.md     # /mega-code:help / $mega-code-help
-│   ├── mega_code/
-│   │   └── client/          # Python client modules
-│   ├── scripts/
-│   │   └── session-start.sh # Bootstrap script
-│   └── pyproject.toml
-├── scripts/
-│   └── session-start.sh     # Bootstrap script
-└── pyproject.toml
-```
-
 ## Configuration
 
 Configuration is stored in `~/.local/share/mega-code/` and persists across sessions.
-Use `/mega-code:login` to authenticate, or `mega-code configure` CLI for advanced settings.
+Use `$mega-code-login` to authenticate, or `mega-code configure` CLI for advanced settings.
 
 ## Terms of Service
 

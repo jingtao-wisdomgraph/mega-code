@@ -20,7 +20,7 @@ Usage:
     python -m mega_code.client.run_pipeline --project
     python -m mega_code.client.run_pipeline --project @mega-code
     python -m mega_code.client.run_pipeline --model gemini-3-flash
-    python -m mega_code.client.run_pipeline --project --include-claude --include-codex
+    python -m mega_code.client.run_pipeline --project --include-codex
     python -m mega_code.client.run_pipeline --poll-existing <run_id> --project <project_id>
 """
 
@@ -143,11 +143,6 @@ Project argument formats:
         help="Max concurrent operations (default: 4)",
     )
     parser.add_argument(
-        "--include-claude",
-        action="store_true",
-        help="Include related Claude Code sessions when loading from project (default: False)",
-    )
-    parser.add_argument(
         "--include-codex",
         action="store_true",
         help="Include related Codex CLI sessions when loading from project (default: False)",
@@ -226,7 +221,6 @@ async def main():
         logger.info("Model not specified — server will select based on configured LLM keys")
 
     # Resolve include flags
-    include_claude = args.include_claude
     include_codex = args.include_codex
 
     # Agent identity (set by SKILL.md setup block)
@@ -234,10 +228,8 @@ async def main():
 
     # Get environment variables
     # session_id already resolved above for tracing setup
-    # MEGA_CODE_PROJECT_DIR is set by skills; CLAUDE_PROJECT_DIR by Claude Code.
-    project_dir_env = Path(
-        os.environ.get("MEGA_CODE_PROJECT_DIR") or os.environ.get("CLAUDE_PROJECT_DIR", ".")
-    ).resolve()
+    # MEGA_CODE_PROJECT_DIR is set by skills.
+    project_dir_env = Path(os.environ.get("MEGA_CODE_PROJECT_DIR", ".")).resolve()
     storage = args.storage or os.environ.get("MEGA_CODE_PIPELINE_STORAGE", "local")
 
     # Determine execution mode
@@ -247,7 +239,6 @@ async def main():
     with tracer.start_as_current_span("run_pipeline") as span:
         # --- Environment snapshot ---
         span.set_attribute("env.MEGA_CODE_PROJECT_DIR", os.environ.get("MEGA_CODE_PROJECT_DIR", ""))
-        span.set_attribute("env.CLAUDE_PROJECT_DIR", os.environ.get("CLAUDE_PROJECT_DIR", ""))
         span.set_attribute("env.MEGA_CODE_SESSION_ID", os.environ.get("MEGA_CODE_SESSION_ID", ""))
         span.set_attribute("env.MEGA_CODE_CLIENT_MODE", os.environ.get("MEGA_CODE_CLIENT_MODE", ""))
         span.set_attribute("env.MEGA_CODE_API_KEY_SET", bool(os.environ.get("MEGA_CODE_API_KEY")))
@@ -269,7 +260,6 @@ async def main():
         span.set_attribute("args.limit", args.limit or 0)
         span.set_attribute("args.steps", ",".join(args.steps) if args.steps else "")
         span.set_attribute("args.concurrency", args.concurrency)
-        span.set_attribute("args.include_claude", include_claude)
         span.set_attribute("args.include_codex", include_codex)
         span.set_attribute("args.agent", agent)
         span.set_attribute("args.poll_existing", args.poll_existing or "")
@@ -324,7 +314,6 @@ async def main():
                 "force": args.force,
                 "limit": args.limit,
                 "concurrency": args.concurrency,
-                "include_claude": include_claude,
                 "include_codex": include_codex,
                 "model": model_name,
                 "agent": agent,
@@ -347,7 +336,6 @@ async def main():
             span.set_attribute("trigger.concurrency", args.concurrency)
             span.set_attribute("trigger.steps", ",".join(args.steps) if args.steps else "all")
             span.set_attribute("trigger.model", model_name or "server-default")
-            span.set_attribute("trigger.include_claude", include_claude)
             span.set_attribute("trigger.include_codex", include_codex)
             if include_codex:
                 span.set_attribute("trigger.project_cwd", str(project_dir_env))

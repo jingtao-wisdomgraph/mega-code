@@ -251,7 +251,6 @@ class MegaCodeRemote:
         limit: int | None = None,
         concurrency: int = 64,
         model: str | None = None,
-        include_claude: bool = False,
         include_codex: bool = False,
         project_cwd: str | None = None,
         agent: str = "",
@@ -259,47 +258,30 @@ class MegaCodeRemote:
         """Trigger pipeline run via POST /api/megacode/v1/pipeline/run.
 
         If project_path is given, syncs local trajectories to the server
-        first. Which sessions are synced depends on the ``agent`` parameter:
-
-        - ``"codex"``: only Codex native sessions by default
-        - ``"claude-code"``: mega-code sessions + Claude native sessions
-        - ``""`` (unknown/unset): mega-code sessions only (backward compat)
-
-        The ``--include-claude`` / ``--include-codex`` flags act as cross-agent
-        opt-ins, adding sessions from the *other* agent on top of the default.
+        first. Codex sessions are synced by default. Mega-code sessions
+        are synced as a fallback when agent is unknown.
 
         Args:
             project_cwd: The actual working directory (e.g. /tmp/test-project).
                 Used for Codex session path matching. Falls back to
                 project_path if not provided.
-            agent: The current coding agent identity (``"claude-code"``,
-                ``"codex"``, or ``""``). Controls which sessions are synced
-                by default.
+            agent: The current coding agent identity (``"codex"`` or ``""``).
+                Controls which sessions are synced by default.
         """
         # Sync local sessions to server if project_path provided.
         # sync_trajectories is sync (uses self._client internally),
         # so offload to a thread to avoid blocking the event loop.
         if project_path is not None:
             if agent == "codex":
-                # Codex agent: only sync codex sessions by default
+                # Codex agent: sync codex sessions
                 await self._sync_codex(project_path, project_id, project_cwd)
-            elif agent == "claude-code":
-                # Claude agent: sync mega-code + claude native sessions
-                from mega_code.client.api.sync import sync_claude_trajectories, sync_trajectories
-
-                await asyncio.to_thread(sync_trajectories, project_path, self, project_id)
-                await asyncio.to_thread(sync_claude_trajectories, project_path, self, project_id)
             else:
                 # Unknown/unset agent: sync mega-code sessions (backward compat)
                 from mega_code.client.api.sync import sync_trajectories
 
                 await asyncio.to_thread(sync_trajectories, project_path, self, project_id)
 
-            # Explicit cross-agent includes (opt-in)
-            if include_claude and agent != "claude-code":
-                from mega_code.client.api.sync import sync_claude_trajectories
-
-                await asyncio.to_thread(sync_claude_trajectories, project_path, self, project_id)
+            # Explicit codex include (opt-in when agent is not codex)
             if include_codex and agent != "codex":
                 await self._sync_codex(project_path, project_id, project_cwd)
 
@@ -319,7 +301,6 @@ class MegaCodeRemote:
             http_span.set_attribute("trigger.concurrency", concurrency)
             http_span.set_attribute("trigger.steps", ",".join(steps) if steps else "all")
             http_span.set_attribute("trigger.model", model or "server-default")
-            http_span.set_attribute("trigger.include_claude", include_claude)
             http_span.set_attribute("trigger.include_codex", include_codex)
             http_span.set_attribute("trigger.project_cwd", project_cwd or "")
             http_span.set_attribute("trigger.agent", agent)
@@ -330,7 +311,6 @@ class MegaCodeRemote:
                 "project_id": project_id,
                 "force": force,
                 "concurrency": concurrency,
-                "include_claude": include_claude,
                 "include_codex": include_codex,
             }
             if session_id is not None:

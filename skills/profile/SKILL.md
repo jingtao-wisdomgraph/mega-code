@@ -13,11 +13,7 @@ which skills are too basic for your experience level.
 ## Setup
 
 ```bash
-if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
-  MEGA_DIR="$CLAUDE_PLUGIN_ROOT"
-else
-  MEGA_DIR="$(cat ~/.local/share/mega-code/pkg-breadcrumb 2>/dev/null)"
-fi
+MEGA_DIR="$(cat ~/.local/share/mega-code/pkg-breadcrumb 2>/dev/null)"
 if [ -z "$MEGA_DIR" ] || [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
   MEGA_DIR="$HOME/.local/share/mega-code/pkg"
   if [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
@@ -65,5 +61,5 @@ uv run --directory "$MEGA_DIR" mega-code profile --reset
 Profile is saved in two places:
 
 - **Remote server** — authoritative source, persists across machines.
-  Requires a valid API key (run `/mega-code:login` or `$mega-code-login` first).
+  Requires a valid API key (run `$mega-code-login` first).
 - **Local mirror** `~/.local/share/mega-code/profile.json` — written only after a successful remote save.

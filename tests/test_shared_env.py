@@ -197,18 +197,16 @@ class TestBootstrapConsistency:
         env["HOME"] = str(tmp_path / "home")
         (tmp_path / "home").mkdir(exist_ok=True)
 
-        if script_name == "session-start.sh":
-            env["CLAUDE_PLUGIN_ROOT"] = str(mega_dir)
         subprocess.run(
-            ["bash", str(script)] + ([str(mega_dir)] if "codex" in script_name else []),
+            ["bash", str(script), str(mega_dir)],
             env=env,
             timeout=60,
             capture_output=True,
         )
         return data_dir
 
-    def test_both_scripts_create_env_file(self, tmp_path):
-        """Both bootstrap scripts create .env in the data directory."""
+    def test_bootstrap_creates_env_file(self, tmp_path):
+        """Bootstrap script creates .env in the data directory."""
         mega_dir = tmp_path / "mega"
         mega_dir.mkdir()
         (mega_dir / "pyproject.toml").write_text(
@@ -216,15 +214,14 @@ class TestBootstrapConsistency:
         )
         (mega_dir / ".env").touch()
 
-        for script_name in ("codex-bootstrap.sh", "session-start.sh"):
-            data_dir = tmp_path / f"data-{script_name}"
-            self._run_bootstrap(script_name, tmp_path, mega_dir, data_dir)
-            assert (data_dir / ".env").is_file(), f"{script_name} didn't create .env"
-            mode = stat.S_IMODE((data_dir / ".env").stat().st_mode)
-            assert mode == 0o600, f"{script_name} didn't set .env permissions to 0600"
+        data_dir = tmp_path / "data-codex"
+        self._run_bootstrap("codex-bootstrap.sh", tmp_path, mega_dir, data_dir)
+        assert (data_dir / ".env").is_file(), "codex-bootstrap.sh didn't create .env"
+        mode = stat.S_IMODE((data_dir / ".env").stat().st_mode)
+        assert mode == 0o600, "codex-bootstrap.sh didn't set .env permissions to 0600"
 
-    def test_both_scripts_create_profile_json(self, tmp_path):
-        """Both bootstrap scripts create profile.json = {}."""
+    def test_bootstrap_creates_profile_json(self, tmp_path):
+        """Bootstrap script creates profile.json = {}."""
         mega_dir = tmp_path / "mega"
         mega_dir.mkdir()
         (mega_dir / "pyproject.toml").write_text(
@@ -232,13 +229,12 @@ class TestBootstrapConsistency:
         )
         (mega_dir / ".env").touch()
 
-        for script_name in ("codex-bootstrap.sh", "session-start.sh"):
-            data_dir = tmp_path / f"data-{script_name}"
-            self._run_bootstrap(script_name, tmp_path, mega_dir, data_dir)
-            assert (data_dir / "profile.json").read_text() == "{}"
+        data_dir = tmp_path / "data-codex"
+        self._run_bootstrap("codex-bootstrap.sh", tmp_path, mega_dir, data_dir)
+        assert (data_dir / "profile.json").read_text() == "{}"
 
-    def test_both_scripts_write_plugin_root_breadcrumb(self, tmp_path):
-        """Both bootstrap scripts write plugin-root breadcrumb."""
+    def test_bootstrap_writes_pkg_breadcrumb(self, tmp_path):
+        """Bootstrap script writes pkg-breadcrumb."""
         mega_dir = tmp_path / "mega"
         mega_dir.mkdir()
         (mega_dir / "pyproject.toml").write_text(
@@ -246,10 +242,9 @@ class TestBootstrapConsistency:
         )
         (mega_dir / ".env").touch()
 
-        for script_name in ("codex-bootstrap.sh", "session-start.sh"):
-            data_dir = tmp_path / f"data-{script_name}"
-            self._run_bootstrap(script_name, tmp_path, mega_dir, data_dir)
-            assert (data_dir / "plugin-root").read_text().strip() == str(mega_dir)
+        data_dir = tmp_path / "data-codex"
+        self._run_bootstrap("codex-bootstrap.sh", tmp_path, mega_dir, data_dir)
+        assert (data_dir / "pkg-breadcrumb").read_text().strip() == str(mega_dir)
 
     def test_credential_migration_from_plugin_dir(self, tmp_path):
         """Bootstrap migrates credentials from MEGA_DIR/.env to DATA_DIR/.env."""

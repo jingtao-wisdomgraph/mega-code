@@ -20,9 +20,9 @@ Usage:
       --session-id abc123
 
     # Custom path
-    python -m mega_code.client.history.convert claude_native \
-      --output claude_native.jsonl \
-      --base-path ~/custom/claude/path
+    python -m mega_code.client.history.convert codex \
+      --output codex.jsonl \
+      --base-path ~/custom/codex/path
 
     # Parquet (requires source-name)
     python -m mega_code.client.history.convert parquet \
@@ -36,7 +36,6 @@ import sys
 from pathlib import Path
 
 from mega_code.client.history.sources import (
-    ClaudeNativeSource,
     CodexSource,
     CursorSource,
     GeminiSource,
@@ -49,7 +48,6 @@ from mega_code.client.history.sources import (
 SOURCE_REGISTRY = {
     "cursor": CursorSource,
     "gemini": GeminiSource,
-    "claude": ClaudeNativeSource,
     "codex": CodexSource,
     "mega_code": MegaCodeSource,
     "opencode": OpenCodeSource,
@@ -143,7 +141,7 @@ Examples:
     --output gemini_session.jsonl --session-id abc123
 
   # Custom base path
-  python -m mega_code.client.history.convert claude_native \
+  python -m mega_code.client.history.convert codex \
     --output out.jsonl --base-path ~/custom/path
 
   # Parquet dataset

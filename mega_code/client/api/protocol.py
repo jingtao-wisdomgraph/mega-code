@@ -253,7 +253,6 @@ class MegaCodeBaseClient(Protocol):
         limit: int | None = None,
         concurrency: int = 64,
         model: str | None = None,
-        include_claude: bool = False,
         include_codex: bool = False,
         project_cwd: str | None = None,
         agent: str = "",

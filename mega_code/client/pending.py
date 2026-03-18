@@ -876,7 +876,7 @@ def format_review_notification(
     """Format a visually highlighted notification for Claude with pending items.
 
     This is the single source of truth for the review notification format.
-    Used by both check_pending_skills.py (hook) and run_pipeline_async.py (post-pipeline).
+    Used by run_pipeline.py (post-pipeline).
 
     Accepts both dataclass types (PendingSkillInfo/PendingStrategyInfo) and
     Pydantic models (PendingSkillData/PendingStrategyData) via duck-typing.

@@ -1,4 +1,4 @@
-"""Unified skill tests: verify skills/ serves both Claude Code and Codex CLI."""
+"""Skill tests: verify skills/ serves Codex CLI."""
 
 import os
 import subprocess
@@ -31,36 +31,36 @@ def test_all_five_skills_exist():
 
 
 @pytest.mark.parametrize("skill_name", SKILL_NAMES)
-def test_unified_skill_frontmatter_valid(skill_name):
+def test_skill_frontmatter_valid(skill_name):
     path = SKILLS_DIR / skill_name / "SKILL.md"
     content = path.read_text()
     parts = content.split("---", 2)
     assert len(parts) >= 3, "Missing YAML frontmatter"
     fm = yaml.safe_load(parts[1])
-    # Must have both Claude Code and Codex required fields
     assert "name" in fm, f"{skill_name}: missing 'name' (required for Codex)"
     assert "description" in fm, f"{skill_name}: missing 'description'"
     assert len(fm["description"]) > 0
-    assert "allowed-tools" in fm, (
-        f"{skill_name}: missing 'allowed-tools' (required for Claude Code)"
-    )
+    assert "allowed-tools" in fm, f"{skill_name}: missing 'allowed-tools'"
 
 
 # ── Cycle 3 ───────────────────────────────────────────────────────────
 
 
 @pytest.mark.parametrize("skill_name", SKILL_NAMES)
-def test_unified_setup_block(skill_name):
-    """Skills that call uv run must use the unified MEGA_DIR setup with fallback."""
+def test_codex_setup_block(skill_name):
+    """Skills that call uv run must use the Codex MEGA_DIR setup with pkg-breadcrumb."""
     path = SKILLS_DIR / skill_name / "SKILL.md"
     content = path.read_text()
     if "uv run" not in content:
         pytest.skip(f"{skill_name} does not call uv run")
-    assert "CLAUDE_PLUGIN_ROOT" in content, f"{skill_name}: missing CLAUDE_PLUGIN_ROOT primary"
-    assert "pkg-breadcrumb" in content, f"{skill_name}: missing pkg-breadcrumb codex fallback"
+    assert "pkg-breadcrumb" in content, f"{skill_name}: missing pkg-breadcrumb codex setup"
     assert "codex-bootstrap.sh" in content, f"{skill_name}: missing codex-bootstrap.sh"
     assert "UV_CACHE_DIR" in content, (
         f"{skill_name}: missing UV_CACHE_DIR for sandbox-safe uv cache"
+    )
+    # Should NOT reference Claude Code env vars
+    assert "CLAUDE_PLUGIN_ROOT" not in content, (
+        f"{skill_name}: should not reference CLAUDE_PLUGIN_ROOT"
     )
 
 
@@ -87,16 +87,13 @@ def test_module_entry_points(skill_name):
 def test_run_skill_includes_codex_flag():
     content = (SKILLS_DIR / "run" / "SKILL.md").read_text()
     assert "--include-codex" in content
-    assert "--include-claude" in content
 
 
-def test_help_skill_shows_both_syntaxes():
+def test_help_skill_shows_codex_syntax():
     content = (SKILLS_DIR / "help" / "SKILL.md").read_text()
     assert "$mega-code-login" in content
     assert "$mega-code-run" in content
     assert "$mega-code-status" in content
-    assert "/mega-code:login" in content
-    assert "/mega-code:run" in content
 
 
 # ── Cycle 6 ───────────────────────────────────────────────────────────

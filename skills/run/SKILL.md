@@ -1,7 +1,7 @@
 ---
 name: mega-code-run
 description: "Run the MEGA-Code skill extraction pipeline to analyze coding sessions and generate reusable skills and strategies."
-argument-hint: "[--project [@<name>]] [--model <model>] [--poll-timeout <seconds>] [--include-claude] [--include-codex]"
+argument-hint: "[--project [@<name>]] [--model <model>] [--poll-timeout <seconds>] [--include-codex]"
 allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 disable-model-invocation: true
 ---
@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 Extract reusable skills and coding strategies from your coding sessions.
 
-## ⚠️ Important: Pipeline is Long-Running
+## Important: Pipeline is Long-Running
 
 The pipeline command **blocks until the server finishes processing**. The server
 runs the pipeline asynchronously and this client polls for completion.
@@ -26,13 +26,7 @@ The default poll timeout is **20 minutes**. For longer runs, use `--poll-timeout
 ## Setup
 
 ```bash
-if [ -n "$CLAUDE_PLUGIN_ROOT" ]; then
-  MEGA_DIR="$CLAUDE_PLUGIN_ROOT"
-  MEGA_CODE_AGENT="claude-code"
-else
-  MEGA_DIR="$(cat ~/.local/share/mega-code/pkg-breadcrumb 2>/dev/null)"
-  MEGA_CODE_AGENT="codex"
-fi
+MEGA_DIR="$(cat ~/.local/share/mega-code/pkg-breadcrumb 2>/dev/null)"
 if [ -z "$MEGA_DIR" ] || [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
   MEGA_DIR="$HOME/.local/share/mega-code/pkg"
   if [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
@@ -40,10 +34,9 @@ if [ -z "$MEGA_DIR" ] || [ ! -f "$MEGA_DIR/pyproject.toml" ]; then
     git clone --depth 1 "${MEGA_CODE_REPO_URL:-https://github.com/wisdomgraph/mega-code.git}" "$MEGA_DIR"
   fi
   bash "$MEGA_DIR/scripts/codex-bootstrap.sh" "$MEGA_DIR"
-  MEGA_CODE_AGENT="codex"
 fi
+export MEGA_CODE_AGENT="codex"
 export MEGA_CODE_DATA_DIR="$HOME/.local/share/mega-code"
-export MEGA_CODE_AGENT
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$MEGA_DIR/.uv-cache}"
 uv run --directory "$MEGA_DIR" python -m mega_code.client.check_auth
 ```
@@ -62,8 +55,7 @@ All commands below assume `MEGA_DIR` is set.
 | `--session-id <uuid>` | Specific session |
 | `--model <alias>` | LLM model (default: server picks best) |
 | `--poll-timeout <seconds>` | Max seconds to poll for completion (default: 1200 = 20 min; 0 = indefinite) |
-| `--include-claude` | Include Claude Code sessions (cross-agent opt-in) |
-| `--include-codex` | Include Codex sessions (cross-agent opt-in) |
+| `--include-codex` | Include Codex sessions (default for Codex agent) |
 
 **Project argument formats** (all equivalent):
 `@mega-code` · `mega-code` · `mega-code_b39e0992` · `/path/to/project`
@@ -75,20 +67,13 @@ Check for pending items first, then run the pipeline. All variables must be in
 
 ```bash
 uv run --directory "$MEGA_DIR" python -m mega_code.client.pending review < /dev/null 2>/dev/null || true
-AGENT_FLAG=""
-if [ "$MEGA_CODE_AGENT" = "codex" ]; then
-  AGENT_FLAG="--include-codex"
-elif [ "$MEGA_CODE_AGENT" = "claude-code" ]; then
-  AGENT_FLAG="--include-claude"
-fi
 LOG="/tmp/mega-code-run-$(date +%Y%m%d-%H%M%S).log" && \
   echo "Pipeline log: $LOG" && \
   export MEGA_CODE_PROJECT_DIR="$PWD" && \
-  uv run --directory "$MEGA_DIR" python -m mega_code.client.run_pipeline $AGENT_FLAG [FLAGS] 2>&1 | tee "$LOG"
+  uv run --directory "$MEGA_DIR" python -m mega_code.client.run_pipeline --include-codex [FLAGS] 2>&1 | tee "$LOG"
 ```
 
 Replace `[FLAGS]` with any additional flags from the table above.
-`$AGENT_FLAG` is set automatically based on the detected coding agent.
 Tell the user the log path so they can monitor with `tail -f` or check after completion.
 
 ## Model Options
@@ -174,7 +159,7 @@ uv run --directory "$MEGA_DIR" python -m mega_code.client.pending review \
 
 ## Tips
 
-- Run the pipeline after significant coding sessions (`/mega-code:run` in Claude Code, `$mega-code-run` in Codex)
+- Run the pipeline after significant coding sessions (`$mega-code-run`)
 - Use `--project` to analyze multiple sessions for stronger patterns
 - Use `@name` to run on a different project without switching directories
 - Skills with more evidence (from multiple sessions) are higher quality

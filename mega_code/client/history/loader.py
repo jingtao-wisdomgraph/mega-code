@@ -1,4 +1,4 @@
-"""DataLoader facade for unified access to Claude Code historical data.
+"""DataLoader facade for unified access to historical session data.
 
 Provides a single interface to load and iterate over sessions from
 multiple data sources.
@@ -6,7 +6,7 @@ multiple data sources.
 Also provides convenience functions for common loading patterns:
 - ``load_session_by_id``: Load a single session by UUID.
 - ``load_sessions_from_project``: Load sessions from a project directory,
-  optionally enriching with Claude native and Codex CLI sessions.
+  optionally enriching with Codex CLI sessions.
 """
 
 import logging
@@ -16,7 +16,6 @@ from typing import Literal
 
 from mega_code.client.history.models import Session
 from mega_code.client.history.protocol import DataSource
-from mega_code.client.history.sources.claude_native import ClaudeNativeSource
 from mega_code.client.history.sources.mega_code import MegaCodeSource
 from mega_code.client.history.sources.parquet import ParquetDatasetSource
 
@@ -24,14 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 class DataLoader:
-    """Unified loader for multiple Claude Code data sources.
+    """Unified loader for multiple data sources.
 
     Provides a single interface to register and iterate over sessions
-    from different data sources (Claude native, MEGA-Code, Parquet datasets).
+    from different data sources (MEGA-Code, Codex, Parquet datasets).
 
     Example:
         loader = DataLoader()
-        loader.register_source(ClaudeNativeSource())
         loader.register_source(ParquetDatasetSource(
             path=Path("datasets/zai-bench.parquet"),
             source_name="zai_bench",
@@ -42,7 +40,7 @@ class DataLoader:
             print(f"[{session.metadata.source}] {session.metadata.session_id}")
 
         # Iterate over specific source
-        for session in loader.iter_source("claude_native"):
+        for session in loader.iter_source("mega_code"):
             print(session.metadata.first_prompt)
     """
 
@@ -160,9 +158,7 @@ class DataLoader:
 
 
 def create_loader(
-    include_claude_native: bool = True,
     include_mega_code: bool = True,
-    claude_native_path: Path | None = None,
     mega_code_path: Path | None = None,
     dataset_paths: dict[str, Path | tuple[Path, str]] | None = None,
 ) -> DataLoader:
@@ -172,9 +168,7 @@ def create_loader(
     common data sources.
 
     Args:
-        include_claude_native: Include ~/.claude/projects source.
         include_mega_code: Include ~/.local/share/mega-code source.
-        claude_native_path: Custom path for Claude native data.
         mega_code_path: Custom path for MEGA-Code data.
         dataset_paths: Dict mapping source names to Parquet paths.
             Values can be:
@@ -198,7 +192,6 @@ def create_loader(
 
         # Only load from datasets
         loader = create_loader(
-            include_claude_native=False,
             include_mega_code=False,
             dataset_paths={
                 "zai_bench": Path("datasets/train.parquet"),
@@ -217,9 +210,6 @@ def create_loader(
                 logger.info(f"Skipping {label} source (path not found): {source.base_path}")
         except Exception as e:
             logger.warning(f"Failed to register {label} source: {e}")
-
-    if include_claude_native:
-        _try_register(ClaudeNativeSource, "Claude native", base_path=claude_native_path)
 
     if include_mega_code:
         _try_register(MegaCodeSource, "MEGA-Code", base_path=mega_code_path)
@@ -255,9 +245,7 @@ def create_loader(
 
 
 def load_session_by_id(session_id: str) -> Session:
-    """Load a single session by ID.
-
-    Tries MegaCodeSource first, then ClaudeNativeSource.
+    """Load a single session by ID from MegaCodeSource.
 
     Args:
         session_id: Session UUID.
@@ -267,44 +255,34 @@ def load_session_by_id(session_id: str) -> Session:
     """
     loader = DataLoader()
     loader.register_source(MegaCodeSource())
-    loader.register_source(ClaudeNativeSource())
-
-    # Try MegaCodeSource first, fall back to ClaudeNativeSource
-    try:
-        return loader.load_from("mega_code", session_id)
-    except KeyError:
-        return loader.load_from("claude_native", session_id)
+    return loader.load_from("mega_code", session_id)
 
 
 def load_sessions_from_project(
     project_path: Path,
     limit: int | None = None,
-    include_claude: bool = False,
     include_codex: bool = False,
 ) -> list[Session]:
     """Load sessions from a project directory.
 
-    Loads MEGA-Code sessions. Optionally enriches with related Claude native sessions
-    and/or Codex CLI sessions when flags are enabled. Sessions are deduplicated by
-    session_id (MEGA-Code takes precedence over Claude). Codex sessions are appended
-    (no deduplication - different IDs).
+    Loads MEGA-Code sessions. Optionally enriches with related Codex CLI sessions
+    when flag is enabled. Codex sessions are appended (no deduplication - different IDs).
 
     Args:
         project_path: Path to project folder.
         limit: Maximum number of sessions to load (applied to combined total).
-        include_claude: Include related Claude Code sessions (default: False).
         include_codex: Include related Codex CLI sessions (default: False).
 
     Returns:
-        List of Session objects (MEGA-Code only, or enriched with Claude/Codex).
+        List of Session objects (MEGA-Code only, or enriched with Codex).
     """
     # Load MEGA-Code sessions
     source = MegaCodeSource()
     mega_sessions = list(source.iter_sessions_from_path(project_path))
     logger.info(f"Loaded {len(mega_sessions)} MEGA-Code sessions from {project_path}")
 
-    # Early return if not including Claude or Codex sessions
-    if not include_claude and not include_codex:
+    # Early return if not including Codex sessions
+    if not include_codex:
         result = mega_sessions[:limit] if limit else mega_sessions
         if limit:
             logger.info(f"Applied limit: returning {len(result)} sessions")
@@ -317,39 +295,13 @@ def load_sessions_from_project(
             project_paths.add(session.metadata.project_path)
 
     if not project_paths:
-        if not include_claude and not include_codex:
+        if not include_codex:
             return mega_sessions[:limit] if limit else mega_sessions
         # Fall back to the project_path argument for enrichment sources
         project_paths.add(str(project_path))
         logger.debug(f"No MEGA sessions; using project_path argument: {project_path}")
 
     logger.debug(f"Found {len(project_paths)} unique project paths in MEGA-Code sessions")
-
-    # Load related Claude native sessions
-    claude_sessions: list[Session] = []
-    if include_claude:
-        try:
-            claude_source = ClaudeNativeSource()
-            entries = list(claude_source.iter_sessions_by_project_paths(list(project_paths)))
-            logger.info(f"Found {len(entries)} related Claude native session entries")
-
-            for entry in entries:
-                session_id = entry.get("sessionId")
-                if not session_id:
-                    continue
-                try:
-                    full_path = entry.get("fullPath")
-                    if full_path:
-                        project_dir = Path(full_path).parent.parent
-                        session = claude_source._load_session_from_entry(entry, project_dir)
-                        claude_sessions.append(session)
-                        logger.debug(f"Loaded session {session_id} from claude_native")
-                except Exception as e:
-                    logger.warning(f"Failed to load Claude session {session_id}: {e}")
-
-            logger.info(f"Successfully loaded {len(claude_sessions)} Claude native sessions")
-        except Exception as e:
-            logger.warning(f"Failed to load Claude native sessions: {e}")
 
     # Load related Codex sessions
     codex_sessions: list[Session] = []
@@ -379,24 +331,13 @@ def load_sessions_from_project(
         except Exception as e:
             logger.warning(f"Failed to load Codex sessions: {e}")
 
-    session_map: dict[str, Session] = {}
-
-    for session in claude_sessions:
-        session_map[session.metadata.session_id] = session
-
-    for session in mega_sessions:
-        session_map[session.metadata.session_id] = session
-        logger.debug(f"Loaded session {session.metadata.session_id} from mega_code")
-
-    # Build session map for deduplication (MEGA-Code > Claude)
-    # Merge: deduplicated sessions + appended Codex
-    merged = list(session_map.values())
+    # Merge: MEGA-Code sessions + appended Codex
+    merged = list(mega_sessions)
     merged.extend(codex_sessions)
 
     logger.info(
         f"Merged: {len(mega_sessions)} MEGA-Code + "
-        f"{len(claude_sessions)} Claude + "
-        f"{len(codex_sessions)} Codex = {len(merged)} total after dedup"
+        f"{len(codex_sessions)} Codex = {len(merged)} total"
     )
 
     if limit:

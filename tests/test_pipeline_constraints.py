@@ -107,7 +107,7 @@ class TestPipelineBusyResponse:
 
     @pytest.mark.asyncio
     async def test_trigger_sends_include_flags(self, client):
-        """Include flags (claude/codex) are sent in the pipeline trigger payload."""
+        """Include codex flag is sent in the pipeline trigger payload."""
         success_response = httpx.Response(
             200,
             json={"run_id": "run-flags", "status": "queued", "message": "ok"},
@@ -121,12 +121,10 @@ class TestPipelineBusyResponse:
 
             await client.trigger_pipeline_run(
                 project_id="test-project",
-                include_claude=True,
                 include_codex=True,
             )
 
             payload = mock_async.post.call_args.kwargs["json"]
-            assert payload["include_claude"] is True
             assert payload["include_codex"] is True
 
 
@@ -225,7 +223,6 @@ class TestTriggerPayloadConstruction:
                 "project_id": "my-proj",
                 "force": False,
                 "concurrency": 64,
-                "include_claude": False,
                 "include_codex": False,
             }
 
@@ -250,7 +247,6 @@ class TestTriggerPayloadConstruction:
                 limit=5,
                 concurrency=8,
                 model="gpt-5-mini",
-                include_claude=True,
                 include_codex=True,
             )
 
@@ -260,7 +256,6 @@ class TestTriggerPayloadConstruction:
             assert payload["limit"] == 5
             assert payload["concurrency"] == 8
             assert payload["model"] == "gpt-5-mini"
-            assert payload["include_claude"] is True
             assert payload["include_codex"] is True
 
     @pytest.mark.asyncio
@@ -365,9 +360,6 @@ class TestAgentScopedSync:
             patch.object(client, "_get_async_client") as mock_ac,
             patch.object(client, "_sync_codex", new_callable=AsyncMock) as mock_codex,
             patch("mega_code.client.api.remote.sync_trajectories", create=True) as mock_sync,
-            patch(
-                "mega_code.client.api.remote.sync_claude_trajectories", create=True
-            ) as mock_claude,
         ):
             mock_async = AsyncMock()
             mock_async.post.return_value = success_response
@@ -381,34 +373,8 @@ class TestAgentScopedSync:
 
             # sync_trajectories should NOT be called for codex agent
             mock_sync.assert_not_called()
-            mock_claude.assert_not_called()
             # _sync_codex SHOULD be called
             mock_codex.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_claude_agent_does_not_call_sync_codex(self, client, success_response):
-        """Claude agent should NOT call _sync_codex by default."""
-        with (
-            patch.object(client, "_get_async_client") as mock_ac,
-            patch.object(client, "_sync_codex", new_callable=AsyncMock) as mock_codex,
-            patch(
-                "mega_code.client.api.remote.asyncio.to_thread", new_callable=AsyncMock
-            ) as mock_to_thread,
-        ):
-            mock_async = AsyncMock()
-            mock_async.post.return_value = success_response
-            mock_ac.return_value = mock_async
-
-            await client.trigger_pipeline_run(
-                project_id="test-proj",
-                project_path=Path("/tmp/test"),
-                agent="claude-code",
-            )
-
-            # _sync_codex should NOT be called for claude agent
-            mock_codex.assert_not_called()
-            # sync_trajectories and sync_claude_trajectories should be called
-            assert mock_to_thread.call_count == 2
 
     @pytest.mark.asyncio
     async def test_unknown_agent_syncs_mega_code_sessions_only(self, client, success_response):
@@ -435,8 +401,8 @@ class TestAgentScopedSync:
             assert mock_to_thread.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_cross_agent_include_claude_from_codex(self, client, success_response):
-        """From Codex, --include-claude adds Claude sessions on top of Codex default."""
+    async def test_cross_agent_include_codex_from_unknown(self, client, success_response):
+        """From unknown agent, --include-codex adds Codex sessions on top of mega-code default."""
         with (
             patch.object(client, "_get_async_client") as mock_ac,
             patch.object(client, "_sync_codex", new_callable=AsyncMock) as mock_codex,
@@ -451,37 +417,11 @@ class TestAgentScopedSync:
             await client.trigger_pipeline_run(
                 project_id="test-proj",
                 project_path=Path("/tmp/test"),
-                agent="codex",
-                include_claude=True,
-            )
-
-            # _sync_codex for default codex sessions
-            mock_codex.assert_called_once()
-            # sync_claude_trajectories called via to_thread for cross-agent opt-in
-            assert mock_to_thread.call_count == 1
-
-    @pytest.mark.asyncio
-    async def test_cross_agent_include_codex_from_claude(self, client, success_response):
-        """From Claude, --include-codex adds Codex sessions on top of Claude default."""
-        with (
-            patch.object(client, "_get_async_client") as mock_ac,
-            patch.object(client, "_sync_codex", new_callable=AsyncMock) as mock_codex,
-            patch(
-                "mega_code.client.api.remote.asyncio.to_thread", new_callable=AsyncMock
-            ) as mock_to_thread,
-        ):
-            mock_async = AsyncMock()
-            mock_async.post.return_value = success_response
-            mock_ac.return_value = mock_async
-
-            await client.trigger_pipeline_run(
-                project_id="test-proj",
-                project_path=Path("/tmp/test"),
-                agent="claude-code",
+                agent="",
                 include_codex=True,
             )
 
-            # Default claude syncs (sync_trajectories + sync_claude_trajectories)
-            assert mock_to_thread.call_count == 2
+            # Default mega-code sync (sync_trajectories)
+            assert mock_to_thread.call_count == 1
             # Cross-agent codex sync
             mock_codex.assert_called_once()

@@ -205,7 +205,6 @@ class TestRunPipelineCodexSync:
                 project_id=project_dir.name,
                 project_path=project_dir,
                 include_codex=True,
-                include_claude=False,
                 project_cwd="/home/user/projects/test-project",
             )
         )
@@ -283,7 +282,6 @@ class TestRunPipelineCodexSync:
                 project_id=data_dir.name,
                 project_path=data_dir,
                 include_codex=True,
-                include_claude=False,
                 project_cwd=None,  # <-- was the bug condition, now resolved via mapping
             )
         )
@@ -349,7 +347,6 @@ class TestRunPipelineCodexSync:
                 project_id=data_dir.name,
                 project_path=data_dir,
                 include_codex=True,
-                include_claude=False,
                 project_cwd="",  # <-- falsy, resolved via mapping
             )
         )
