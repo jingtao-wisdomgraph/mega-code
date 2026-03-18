@@ -320,9 +320,7 @@ def _write_checkpoint(trace_dir: Path, checkpoints: dict[str, int]) -> None:
         pass
 
 
-def _read_spans_from_file(
-    file_path: Path, offset: int = 0
-) -> tuple[list[dict], int]:
+def _read_spans_from_file(file_path: Path, offset: int = 0) -> tuple[list[dict], int]:
     """Read NDJSON spans from file starting at byte offset.
 
     Returns (spans, new_offset). Deduplicates by spanId (last wins).

@@ -112,7 +112,9 @@ def setup_tracing(service_name: str = "mega-code-client", session_id: str | None
         trace_dir = data_dir() / "trace"
         _writer = NdjsonSpanWriter(trace_dir, _trace_id)
         _tracing_enabled = True
-        logger.info("NDJSON tracing initialized: trace_id=%s, file=%s", _trace_id, _writer.file_path)
+        logger.info(
+            "NDJSON tracing initialized: trace_id=%s, file=%s", _trace_id, _writer.file_path
+        )
         return True
     except Exception:
         logger.debug("Failed to initialize tracing", exc_info=True)

@@ -163,7 +163,9 @@ def extract_turns(
 
         span.set_attribute("extract.turn_count", len(turns))
         span.set_attribute("extract.user_turns", sum(1 for t in turns if t.role == "user"))
-        span.set_attribute("extract.assistant_turns", sum(1 for t in turns if t.role == "assistant"))
+        span.set_attribute(
+            "extract.assistant_turns", sum(1 for t in turns if t.role == "assistant")
+        )
         span.set_attribute("extract.tool_calls", sum(1 for t in turns if t.tool_name))
         span.set_attribute("extract.errors", sum(1 for t in turns if t.is_error))
 

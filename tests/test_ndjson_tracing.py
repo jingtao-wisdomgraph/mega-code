@@ -146,7 +146,9 @@ class TestNdjsonSpan:
         lines = writer.file_path.read_text().strip().split("\n")
         final = json.loads(lines[-1])
         assert final["status"]["code"] == STATUS_ERROR
-        event_attrs = {a["key"]: a["value"]["stringValue"] for a in final["events"][0]["attributes"]}
+        event_attrs = {
+            a["key"]: a["value"]["stringValue"] for a in final["events"][0]["attributes"]
+        }
         assert event_attrs["exception.type"] == "RuntimeError"
         assert event_attrs["exception.message"] == "oops"
 
@@ -170,8 +172,12 @@ class TestNdjsonSpan:
     def test_span_fields(self, writer):
         """Span has all required OTLP fields."""
         span = NdjsonSpan(
-            writer, "my-span", "abcd" * 8, "1234" * 4,
-            parent_span_id="parent123", kind=SPAN_KIND_CLIENT,
+            writer,
+            "my-span",
+            "abcd" * 8,
+            "1234" * 4,
+            parent_span_id="parent123",
+            kind=SPAN_KIND_CLIENT,
         )
         with span:
             pass
@@ -325,10 +331,16 @@ class TestExport:
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("httpx.post", return_value=mock_resp) as mock_post, patch.dict(os.environ, {
-            "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://test.example.com/v1/traces",
-            "OTEL_EXPORTER_OTLP_HEADERS": "x-honeycomb-team=test123",
-        }):
+        with (
+            patch("httpx.post", return_value=mock_resp) as mock_post,
+            patch.dict(
+                os.environ,
+                {
+                    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://test.example.com/v1/traces",
+                    "OTEL_EXPORTER_OTLP_HEADERS": "x-honeycomb-team=test123",
+                },
+            ),
+        ):
             result = export_traces(writer.file_path.parent, writer=writer)
 
         assert result is True
@@ -355,9 +367,15 @@ class TestExport:
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("httpx.post", return_value=mock_resp), patch.dict(os.environ, {
-            "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://test.example.com/v1/traces",
-        }):
+        with (
+            patch("httpx.post", return_value=mock_resp),
+            patch.dict(
+                os.environ,
+                {
+                    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://test.example.com/v1/traces",
+                },
+            ),
+        ):
             export_traces(writer.file_path.parent, writer=writer)
 
         assert not writer.file_path.exists()
@@ -371,9 +389,15 @@ class TestExport:
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("httpx.post", return_value=mock_resp), patch.dict(os.environ, {
-            "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://test.example.com/v1/traces",
-        }):
+        with (
+            patch("httpx.post", return_value=mock_resp),
+            patch.dict(
+                os.environ,
+                {
+                    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://test.example.com/v1/traces",
+                },
+            ),
+        ):
             result = flush_traces(writer=writer)
 
         assert result is True
@@ -413,10 +437,13 @@ class TestTracingModuleIntegration:
         mod._writer = None
         mod._tracer_cache.clear()
 
-        with patch.dict(os.environ, {
-            "MEGA_CODE_TRACING": "true",
-            "MEGA_CODE_DATA_DIR": str(tmp_path),
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "MEGA_CODE_TRACING": "true",
+                "MEGA_CODE_DATA_DIR": str(tmp_path),
+            },
+        ):
             result = mod.setup_tracing(session_id="test-session")
         assert result is True
         assert mod._writer is not None

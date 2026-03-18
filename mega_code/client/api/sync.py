@@ -92,7 +92,9 @@ def _upload_sessions(
     from mega_code.client.utils.tracing import get_tracer
 
     tracer = get_tracer(__name__)
-    with tracer.start_as_current_span(f"sync.upload_sessions.{label.strip() or 'mega_code'}") as span:
+    with tracer.start_as_current_span(
+        f"sync.upload_sessions.{label.strip() or 'mega_code'}"
+    ) as span:
         span.set_attribute("sync.label", label.strip() or "mega_code")
         span.set_attribute("sync.ledger_path", str(ledger_path))
         span.set_attribute("sync.ledger_key", ledger_key)
@@ -230,7 +232,10 @@ def sync_claude_trajectories(
         claude_sessions = [s for s in all_sessions if s.metadata.source == "claude_native"]
         span.set_attribute("sync.claude_session_count", len(claude_sessions))
         if claude_sessions:
-            span.set_attribute("sync.claude_session_ids", ",".join(s.metadata.session_id for s in claude_sessions[:50]))
+            span.set_attribute(
+                "sync.claude_session_ids",
+                ",".join(s.metadata.session_id for s in claude_sessions[:50]),
+            )
 
     if not claude_sessions:
         logger.info("No Claude native sessions found for project")
