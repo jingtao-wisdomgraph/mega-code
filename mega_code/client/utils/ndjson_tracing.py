@@ -162,6 +162,16 @@ class NdjsonSpan:
         except Exception:
             pass
 
+    def add_event(self, name: str, attributes: dict[str, Any] | None = None) -> None:
+        """Record a named event on this span."""
+        try:
+            event: dict[str, Any] = {"name": name, "timeUnixNano": str(_now_ns())}
+            if attributes:
+                event["attributes"] = [_otlp_attr(k, v) for k, v in attributes.items()]
+            self._events.append(event)
+        except Exception:
+            pass
+
     def record_exception(self, exception: BaseException) -> None:
         """Record an exception as a span event."""
         try:

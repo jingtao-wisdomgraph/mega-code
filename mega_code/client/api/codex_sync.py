@@ -28,7 +28,10 @@ def sync_codex_trajectories(
     ledger_dir: Path | None = None,
 ) -> int:
     """Upload Codex CLI sessions matching the project path to the server."""
+    import json as _json
+
     from mega_code.client.history.sources.codex import CodexSource
+    from mega_code.client.utils.path_utils import normalize_path, should_include_session
     from mega_code.client.utils.tracing import get_tracer
 
     tracer = get_tracer(__name__)
@@ -40,33 +43,105 @@ def sync_codex_trajectories(
 
     logger.info("Codex sync: matching sessions against project_path=%s", project_path)
 
-    # Discover Codex sessions matching this project path
+    # Inline session scanning for per-session tracing
     codex_source = CodexSource()
-    matching_entries = list(codex_source.iter_sessions_by_project_paths([project_path]))
+    normalized_targets = {normalize_path(project_path)}
+    matching_entries: list[dict] = []
+    total_scanned = 0
+    excluded_count = 0
+    cwd_breakdown: dict[str, dict[str, int]] = {}
 
+    for jsonl_file in codex_source._iter_session_files():
+        total_scanned += 1
+        try:
+            entries = codex_source._load_jsonl_entries(jsonl_file)
+            if not entries:
+                span.add_event("session.filter_decision", {
+                    "session.id": "",
+                    "session.cwd": "",
+                    "session.file": str(jsonl_file),
+                    "session.included": False,
+                    "session.exclude_reason": "no_entries",
+                })
+                excluded_count += 1
+                continue
+
+            session_meta = next((e for e in entries if e.get("type") == "session_meta"), None)
+            if not session_meta:
+                span.add_event("session.filter_decision", {
+                    "session.id": "",
+                    "session.cwd": "",
+                    "session.file": str(jsonl_file),
+                    "session.included": False,
+                    "session.exclude_reason": "no_session_meta",
+                })
+                excluded_count += 1
+                continue
+
+            payload = session_meta.get("payload", {})
+            session_cwd = payload.get("cwd")
+            session_id = payload.get("id", "")
+
+            if not session_cwd:
+                span.add_event("session.filter_decision", {
+                    "session.id": session_id,
+                    "session.cwd": "",
+                    "session.file": str(jsonl_file),
+                    "session.included": False,
+                    "session.exclude_reason": "no_cwd",
+                })
+                excluded_count += 1
+                continue
+
+            # Track cwd breakdown
+            if session_cwd not in cwd_breakdown:
+                cwd_breakdown[session_cwd] = {"count": 0, "included": 0}
+            cwd_breakdown[session_cwd]["count"] += 1
+
+            if should_include_session(session_cwd, normalized_targets):
+                cwd_breakdown[session_cwd]["included"] += 1
+                matching_entries.append({
+                    "payload": payload,
+                    "session_file_path": str(jsonl_file),
+                })
+                span.add_event("session.filter_decision", {
+                    "session.id": session_id,
+                    "session.cwd": session_cwd,
+                    "session.file": str(jsonl_file),
+                    "session.included": True,
+                    "session.exclude_reason": "",
+                })
+            else:
+                excluded_count += 1
+                span.add_event("session.filter_decision", {
+                    "session.id": session_id,
+                    "session.cwd": session_cwd,
+                    "session.file": str(jsonl_file),
+                    "session.included": False,
+                    "session.exclude_reason": "path_mismatch",
+                })
+        except Exception as e:
+            logger.debug("Failed to process session file %s: %s", jsonl_file, e)
+            excluded_count += 1
+
+    # Set summary attributes
+    all_cwds = list(cwd_breakdown.keys())
+    span.set_attribute("sync.codex_total_scanned", total_scanned)
     span.set_attribute("sync.codex_matched_count", len(matching_entries))
+    span.set_attribute("sync.codex_excluded_count", excluded_count)
+    span.set_attribute("sync.codex_cwd_breakdown", _json.dumps(cwd_breakdown))
+    span.set_attribute("sync.codex_target_path", project_path)
+    span.set_attribute("sync.codex_all_cwds", ",".join(all_cwds[:20]))
+
     logger.info(
         "Codex sync: %d session(s) matched project_path=%s", len(matching_entries), project_path
     )
 
     if not matching_entries:
-        # Log all available cwds for diagnostics
-        all_cwds: list[str] = []
-        for jsonl_file in codex_source._iter_session_files():
-            try:
-                entries = codex_source._load_jsonl_entries(jsonl_file)
-                meta = next((e for e in entries if e.get("type") == "session_meta"), None)
-                if meta:
-                    cwd = meta.get("payload", {}).get("cwd", "<missing>")
-                    all_cwds.append(cwd)
-            except Exception:
-                pass
-        span.set_attribute("sync.codex_all_cwds", ",".join(all_cwds[:20]))
-        span.set_attribute("sync.codex_total_sessions", len(all_cwds))
         span_ctx.__exit__(None, None, None)
         logger.info(
-            "Codex sync: 0 matches — total sessions found: %d, cwds: %s",
-            len(all_cwds),
+            "Codex sync: 0 matches — total sessions scanned: %d, cwds: %s",
+            total_scanned,
             all_cwds[:20],
         )
         return 0

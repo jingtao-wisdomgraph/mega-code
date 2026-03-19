@@ -105,11 +105,35 @@ def _upload_sessions(
         synced = ledger.get(ledger_key, {})
         span.set_attribute("sync.already_synced", len(synced))
 
+        span.set_attribute("sync.ledger_entries_before", len(synced))
+
         to_upload: list[tuple[str, Callable[[], TurnSet | None]]] = []
         for sid, loader in sessions:
             existing = synced.get(sid)
-            if existing is None or (needs_resync is not None and needs_resync(sid, existing)):
+            if existing is None:
                 to_upload.append((sid, loader))
+                span.add_event("session.ledger_decision", {
+                    "session.id": sid,
+                    "decision": "new",
+                    "reason": "not_in_ledger",
+                })
+            elif needs_resync is not None and needs_resync(sid, existing):
+                to_upload.append((sid, loader))
+                span.add_event("session.ledger_decision", {
+                    "session.id": sid,
+                    "decision": "resync",
+                    "reason": "file_modified",
+                    "ledger.uploaded_at": existing.get("uploaded_at", ""),
+                    "ledger.turn_count": existing.get("turn_count", 0),
+                })
+            else:
+                span.add_event("session.ledger_decision", {
+                    "session.id": sid,
+                    "decision": "skip",
+                    "reason": "already_synced",
+                    "ledger.uploaded_at": existing.get("uploaded_at", ""),
+                    "ledger.turn_count": existing.get("turn_count", 0),
+                })
 
         span.set_attribute("sync.to_upload", len(to_upload))
         span.set_attribute("sync.skipped_already_synced", len(sessions) - len(to_upload))
@@ -132,6 +156,11 @@ def _upload_sessions(
             if not turn_set or not turn_set.turns:
                 logger.debug("Skipping empty %ssession: %s", label, session_id)
                 skipped_empty += 1
+                span.add_event("session.upload_outcome", {
+                    "session.id": session_id,
+                    "outcome": "skipped_empty",
+                    "reason": "no_turns_after_extraction",
+                })
                 continue
 
             result: UploadResult = client.upload_trajectory(
@@ -139,6 +168,12 @@ def _upload_sessions(
                 project_id=project_id,
             )
             logger.info("Uploaded %s%s: %s", label, session_id, result.message)
+            span.add_event("session.upload_outcome", {
+                "session.id": session_id,
+                "outcome": "uploaded",
+                "turn_count": len(turn_set.turns),
+                "server_message": result.message,
+            })
 
             entry = {
                 "uploaded_at": datetime.now(UTC).isoformat(),
@@ -158,6 +193,7 @@ def _upload_sessions(
 
         span.set_attribute("sync.uploaded", uploaded)
         span.set_attribute("sync.skipped_empty", skipped_empty)
+        span.set_attribute("sync.ledger_entries_after", len(ledger.get(ledger_key, {})))
         logger.info("%sSync complete: %d new, %d existing", label, uploaded, len(synced))
         return uploaded
 
@@ -178,7 +214,14 @@ def sync_trajectories(
         span.set_attribute("sync.project_dir", str(project_dir))
         span.set_attribute("sync.project_id", project_id)
 
-        local_sessions = [d.name for d in project_dir.iterdir() if d.is_dir() and _is_uuid(d.name)]
+        local_sessions = []
+        for d in project_dir.iterdir():
+            if d.is_dir() and _is_uuid(d.name):
+                local_sessions.append(d.name)
+                span.add_event("session.discovered", {
+                    "session.id": d.name,
+                    "session.dir": str(d),
+                })
         span.set_attribute("sync.local_session_count", len(local_sessions))
         span.set_attribute("sync.local_session_ids", ",".join(local_sessions[:50]))
 

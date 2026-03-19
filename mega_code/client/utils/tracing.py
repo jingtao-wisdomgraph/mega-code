@@ -44,6 +44,9 @@ class _NoOpSpan:
     def set_attribute(self, _key: str, _value: Any) -> None:
         pass
 
+    def add_event(self, _name: str, _attributes: Any = None) -> None:
+        pass
+
     def record_exception(self, _exception: BaseException) -> None:
         pass
 
