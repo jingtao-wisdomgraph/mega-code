@@ -126,7 +126,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         print("   Status: Installed (skills)")
     else:
         print("   Status: Not detected")
-        print("   Install via: npx skills add https://github.com/wisdomgraph/mega-code/tree/codex -a codex")
+        print(
+            "   Install via: npx skills add https://github.com/wisdomgraph/mega-code/tree/codex -a codex"
+        )
 
     # Check profile
     profile_path = data_root / "profile.json"
