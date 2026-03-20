@@ -60,7 +60,7 @@ skill-factory    █████████░░░░░░░  43%
 ### Step 1 — Install
 
 ```bash
-npx skills add wisdomgraph/mega-code -a codex
+npx skills add https://github.com/wisdomgraph/mega-code/tree/codex -a codex
 ```
 
 ### Step 2 — Sign in
@@ -117,7 +117,7 @@ $mega-code-status                 # See what was generated
 ## Update
 
 ```bash
-npx skills add wisdomgraph/mega-code -a codex
+npx skills add https://github.com/wisdomgraph/mega-code/tree/codex -a codex
 ```
 
 ---

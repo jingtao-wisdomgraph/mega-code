@@ -8,7 +8,7 @@ Usage:
     mega-code login [--provider github|google]
     mega-code profile [--language <lang>] [--level <level>] [--style <style>]
 
-Installation is handled via Codex CLI: npx skills add wisdomgraph/mega-code -a codex
+Installation is handled via Codex CLI: npx skills add https://github.com/wisdomgraph/mega-code/tree/codex -a codex
 """
 
 import argparse
