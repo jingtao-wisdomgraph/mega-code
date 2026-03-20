@@ -12,7 +12,7 @@ no_outputs_notification: |
   - Quality gates filtered out low-quality outputs
   - No new patterns were detected
 
-  Try running on more sessions with: /mega-code:run --project
+  Try running on more sessions with: $mega-code-run --project
 
 error_notification: |
   ═══════════════════════════════════════════════════════════════════════
@@ -24,12 +24,12 @@ error_notification: |
   ${error}
 
   Please check the logs for more details.
-  You can try again with: /mega-code:run
+  You can try again with: $mega-code-run
 
 review_notification:
   workflow_template: |
     ┌───────────────────────────────────────────────────────────────────┐
-    │                    MANDATORY WORKFLOW FOR CLAUDE                   │
+    │                    MANDATORY WORKFLOW FOR CODEX                   │
     └───────────────────────────────────────────────────────────────────┘
 
     You MUST execute this workflow IMMEDIATELY:
