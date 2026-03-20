@@ -1,4 +1,4 @@
-# MEGA Code 1.0.1-beta
+# MEGA Code 1.0.2-beta
 
 **AI agents that evolve autonomously. Developers that never stop learning.**
 
