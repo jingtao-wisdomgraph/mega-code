@@ -123,10 +123,10 @@ def cmd_status(args: argparse.Namespace) -> int:
     print("\nPlugin:")
     if plugin_root:
         print(f"   Root: {plugin_root}")
-        print("   Status: Installed (marketplace)")
+        print("   Status: Installed (skills)")
     else:
         print("   Status: Not detected")
-        print("   Install via: /install-plugin mega-code@wisdomgraph-mega-code")
+        print("   Install via: npx skills add https://github.com/wisdomgraph/mega-code/tree/codex -a codex")
 
     # Check profile
     profile_path = data_root / "profile.json"
