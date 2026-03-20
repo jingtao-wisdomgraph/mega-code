@@ -191,7 +191,7 @@ plugin/
 └── pyproject.toml
 ```
 
-## `/mega-code:run` Behaviour
+## Behaviour
 
 ### Session resolution
 
