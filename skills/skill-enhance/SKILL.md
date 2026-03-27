@@ -12,7 +12,7 @@ handles test generation, grading, and enhancement; isolated A/B completions run 
 
 ```bash
 MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/plugin-root 2>/dev/null)}"
-set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a
+set -a && . ~/.local/share/mega-code/.env 2>/dev/null && set +a
 uv run --directory "$MEGA_DIR" python -m mega_code.client.check_auth
 ```
 
@@ -362,7 +362,7 @@ else:
     print(default_path)
 ")
 ENHANCED_CONTENT=$(cat "$FINAL_SKILL_PATH")
-set -a && . "$MEGA_DIR/.env" 2>/dev/null && set +a
+set -a && . ~/.local/share/mega-code/.env 2>/dev/null && set +a
 ITER_DIR="$ITER_DIR" SKILL_NAME="$SKILL_NAME" ITERATION_NUM="$ITERATION_NUM" \
 uv run --directory "$MEGA_DIR" python -c "
 import json, os, sys
