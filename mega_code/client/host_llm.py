@@ -282,7 +282,6 @@ def _clean_env() -> dict[str, str]:
     runs as a vanilla session — no hooks, no pending-skill prompts.
     """
     env = dict(os.environ)
-    # Remove plugin context that would inject hooks/system prompts
     for key in (
         "CLAUDE_PLUGIN_ROOT",
         "CLAUDE_PROJECT_DIR",

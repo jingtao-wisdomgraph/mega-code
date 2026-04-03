@@ -1,6 +1,6 @@
 ---
 description: Run the MEGA-Code skill extraction pipeline to analyze Claude Code sessions and generate reusable skills and strategies.
-argument-hint: [--project [@<name>]] [--model <model>] [--poll-timeout <seconds>] [--include-claude]
+argument-hint: "[--project [@<name>]] [--model <model>] [--poll-timeout <seconds>] [--include-claude]"
 allowed-tools: Bash, Read, Write, Edit, AskUserQuestion
 disable-model-invocation: true
 ---
@@ -25,7 +25,7 @@ The default poll timeout is **20 minutes**. For longer runs, use `--poll-timeout
 ## Setup
 
 ```bash
-MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/plugin-root 2>/dev/null)}"
+MEGA_DIR="$(cd "${CLAUDE_SKILL_DIR}/../.." && pwd)"
 uv run --directory "$MEGA_DIR" python -m mega_code.client.check_auth
 ```
 

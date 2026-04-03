@@ -28,6 +28,7 @@ import re
 from pathlib import Path
 
 from mega_code.client.dirs import data_dir
+from mega_code.client.skill_utils import canonical_skill_name
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,25 @@ def workspace_root(skill_name: str) -> Path:
     return data_dir() / "data" / "skill-enhance" / skill_name
 
 
+def resolve_workspace_skill_name(skill_name: str, skill_path: str = "") -> str:
+    """Return the canonical skill slug for workspace storage."""
+    fallback_name = canonical_skill_name(skill_name)
+    if not skill_path:
+        return fallback_name
+
+    path = Path(skill_path)
+    if path.is_dir():
+        path = path / "SKILL.md"
+    if not path.exists():
+        return fallback_name
+
+    try:
+        skill_md = path.read_text(encoding="utf-8")
+    except OSError:
+        return fallback_name
+    return canonical_skill_name(skill_name, skill_md)
+
+
 def _max_iteration(root: Path) -> int:
     """Find the highest iteration-N number under *root*, or 0 if none exist."""
     if not root.exists():
@@ -57,7 +77,7 @@ def _max_iteration(root: Path) -> int:
     return max_iter
 
 
-def create_iteration_dir(skill_name: str) -> tuple[Path, int]:
+def create_iteration_dir(skill_name: str, skill_path: str = "") -> tuple[Path, int]:
     """Create the next iteration directory for a skill evaluation.
 
     Scans existing iteration-N dirs and creates iteration-(N+1).
@@ -65,7 +85,7 @@ def create_iteration_dir(skill_name: str) -> tuple[Path, int]:
     Returns:
         Tuple of (iteration_dir_path, iteration_number).
     """
-    root = workspace_root(skill_name)
+    root = workspace_root(resolve_workspace_skill_name(skill_name, skill_path))
     root.mkdir(parents=True, exist_ok=True)
 
     max_iter = _max_iteration(root)
@@ -153,3 +173,41 @@ def save_text_artifact(iteration_dir: Path, name: str, content: str) -> Path:
     path.write_text(content, encoding="utf-8")
     logger.info("Saved text artifact: %s", path)
     return path
+
+
+def main() -> None:
+    """CLI entry point for eval_workspace.
+
+    Subcommands:
+        create-iteration  Create the next iteration directory for a skill.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="mega_code.client.eval_workspace",
+        description="Iteration workspace management for skill-enhance.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    create_iter = subparsers.add_parser(
+        "create-iteration",
+        help="Create the next iteration directory for a skill evaluation",
+    )
+    create_iter.add_argument(
+        "--skill-name", required=True, help="Name of the skill to create an iteration for"
+    )
+    create_iter.add_argument(
+        "--skill-path",
+        default="",
+        help="Optional path to SKILL.md used to derive the canonical workspace slug",
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "create-iteration":
+        path, num = create_iteration_dir(args.skill_name, args.skill_path)
+        print(json.dumps({"path": str(path), "iteration": num}))
+
+
+if __name__ == "__main__":
+    main()

@@ -114,10 +114,7 @@ _PATTERN_RULES = [
 ]
 
 _SEVERITY_ORDER = {"low": 1, "medium": 2, "high": 3}
-
-
-def _extract_frontmatter(skill_md: str) -> dict:
-    return parse_frontmatter(skill_md)
+_ALLOWED_IGNORE_PATTERNS = {"env_reference"}
 
 
 def _ignored_pattern_names(frontmatter: dict) -> set[str]:
@@ -131,7 +128,12 @@ def _ignored_pattern_names(frontmatter: dict) -> set[str]:
     return {str(name) for name in ignore_patterns}
 
 
-def _classify_trust(skill_md: str, source: str = "auto") -> tuple[str, str, str]:
+def _applied_ignored_pattern_names(requested_patterns: set[str]) -> set[str]:
+    """Return the subset of requested ignore names that are safe to honor."""
+    return requested_patterns & _ALLOWED_IGNORE_PATTERNS
+
+
+def _classify_trust(frontmatter: dict, source: str = "auto") -> tuple[str, str, str]:
     """Return (trust_level, trust_reason, trust_explanation).
 
     Two trust levels:
@@ -151,7 +153,6 @@ def _classify_trust(skill_md: str, source: str = "auto") -> tuple[str, str, str]
             "The skill was explicitly marked as coming from a known organization, so it is treated as trusted.",
         )
 
-    frontmatter = _extract_frontmatter(skill_md)
     author = str(skill_frontmatter_value(frontmatter, "author", "")).lower()
 
     if source == "unknown" or MEGACODE_AUTHOR_MARKER not in author:
@@ -170,18 +171,34 @@ def _classify_trust(skill_md: str, source: str = "auto") -> tuple[str, str, str]
 
 def classify_trust_level(skill_md: str, source: str = "auto") -> str:
     """Classify skill trust level for evaluation policy."""
-    trust_level, _, _ = _classify_trust(skill_md, source=source)
+    frontmatter = parse_frontmatter(skill_md)
+    trust_level, _, _ = _classify_trust(frontmatter, source=source)
     return trust_level
 
 
-def _line_number_for_offset(content: str, offset: int) -> int:
-    return content.count("\n", 0, offset) + 1
+def _build_line_index(content: str) -> list[int]:
+    """Build a sorted list of newline offsets for O(log n) line lookups."""
+    index: list[int] = []
+    pos = -1
+    while True:
+        pos = content.find("\n", pos + 1)
+        if pos == -1:
+            break
+        index.append(pos)
+    return index
+
+
+def _line_number_from_index(line_index: list[int], offset: int) -> int:
+    from bisect import bisect_left
+
+    return bisect_left(line_index, offset) + 1
 
 
 def scan_red_flags(skill_md: str, ignored_patterns: set[str] | None = None) -> list[dict]:
     """Return deterministic red-flag findings for a skill."""
     ignored_patterns = ignored_patterns or set()
     findings: list[dict] = []
+    line_index = _build_line_index(skill_md)
     for rule in _PATTERN_RULES:
         if rule["name"] in ignored_patterns:
             continue
@@ -192,7 +209,7 @@ def scan_red_flags(skill_md: str, ignored_patterns: set[str] | None = None) -> l
                     "category": rule["category"],
                     "severity": rule["severity"],
                     "description": rule["description"],
-                    "line": _line_number_for_offset(skill_md, match.start()),
+                    "line": _line_number_from_index(line_index, match.start()),
                     "evidence": match.group(0)[:200],
                 }
             )
@@ -220,12 +237,12 @@ def derive_ab_policy(trust_level: str, findings: list[dict]) -> str:
     has_high = any(finding["severity"] == "high" for finding in findings)
     has_any = bool(findings)
 
-    if trust_level == "semitrusted":
-        if has_high:
-            return "skip_ab"
-        if has_any:
-            return "warn_and_continue"
-        return "full_access"
+    if has_high and trust_level == "semitrusted":
+        return "skip_ab"
+    # Intentional: trusted skills with findings still get a warning rather than
+    # silently passing with full_access. Only finding-free skills skip the gate.
+    if has_any:
+        return "warn_and_continue"
 
     return "full_access"
 
@@ -247,9 +264,10 @@ def summarize_audit(trust_level: str, findings: list[dict], policy: str) -> str:
 def audit_skill(skill_path: Path, source: str = "auto") -> dict:
     """Run a static security audit over a skill file."""
     skill_md = skill_path.read_text(encoding="utf-8")
-    frontmatter = _extract_frontmatter(skill_md)
-    trust_level, trust_reason, trust_explanation = _classify_trust(skill_md, source=source)
-    ignored_patterns = _ignored_pattern_names(frontmatter)
+    frontmatter = parse_frontmatter(skill_md)
+    trust_level, trust_reason, trust_explanation = _classify_trust(frontmatter, source=source)
+    requested_ignored_patterns = _ignored_pattern_names(frontmatter)
+    ignored_patterns = _applied_ignored_pattern_names(requested_ignored_patterns)
     findings = scan_red_flags(skill_md, ignored_patterns=ignored_patterns)
     policy = derive_ab_policy(trust_level, findings)
 
@@ -261,6 +279,7 @@ def audit_skill(skill_path: Path, source: str = "auto") -> dict:
         "trust_explanation": trust_explanation,
         "security_score": security_score(findings),
         "ab_policy": policy,
+        "requested_ignored_patterns": sorted(requested_ignored_patterns),
         "ignored_patterns": sorted(ignored_patterns),
         "red_flags": findings,
         "summary": summarize_audit(trust_level, findings, policy),

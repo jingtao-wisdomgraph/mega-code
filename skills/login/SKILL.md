@@ -1,6 +1,6 @@
 ---
 description: Sign in to MEGA-Code via GitHub or Google OAuth to get an API key.
-argument-hint: [--provider github|google] [--url https://console.megacode.ai]
+argument-hint: "[--provider github|google] [--url https://console.megacode.ai]"
 allowed-tools: Bash, Read, AskUserQuestion
 ---
 
@@ -11,7 +11,7 @@ Authenticate with MEGA-Code to obtain an API key using a two-step OAuth flow.
 ## Setup
 
 ```bash
-MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/plugin-root 2>/dev/null)}"
+MEGA_DIR="$(cd "${CLAUDE_SKILL_DIR}/../.." && pwd)"
 ```
 
 ## Step 1: Create session (fast, non-blocking)

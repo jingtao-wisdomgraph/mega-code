@@ -6,14 +6,14 @@
     "email": "support@megacode.ai"
   },
   "metadata": {
-    "description": "Self-Evolving AI Coding Infrastructure — Phase 1: Automatic Skill & Strategy Generation"
+    "description": "Self-Evolving AI Coding Infrastructure — Generate, Curate, and Enhance Reusable Wisdom"
   },
   "plugins": [
     {
       "name": "mega-code",
       "source": "./",
-      "description": "Automatically creates Skills and Strategies by capturing execution logs from coding sessions. The AI agents learn from past mistakes instead of starting from zero every session. BYOK model with local extraction pipeline.",
-      "version": "1.0.3-beta",
+      "description": "MEGA Code turns coding sessions into self-evolving wisdom for agents and developers. It automatically generates Skills and Strategies from past sessions, curates the right workflows and Cheatmaps from the Wisdom DB based on user intent, and enhances existing Skills through evaluation and ROI analysis. BYOK model with local extraction pipeline.",
+      "version": "1.1.0-beta",
       "author": {
         "name": "Mind AI",
         "email": "support@megacode.ai"

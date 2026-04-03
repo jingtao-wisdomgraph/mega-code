@@ -23,11 +23,10 @@ __all__ = [
     "PipelineStopResult",
     "ProfileResult",
     "SkillArtifactData",
+    "SkillRefItem",
     "TriggerPipelineResult",
-    "UpdateSkillRoiResult",
     "UploadResult",
     "UserProfile",
-    "materialize_skill_contents",
 ]
 
 from pathlib import Path
@@ -71,9 +70,7 @@ class PendingSkillData(BaseModel):
     installed: bool = False
     approved: bool = False
     author: str = ""
-    version: str = "1.0.0"
-    origin: str = "wisdom_gen"
-    parent_skill_name: str | None = None
+    version: str = ""
     tags: list[str] = Field(default_factory=list)
 
 
@@ -194,13 +191,6 @@ class ProfileResult(BaseModel):
     message: str = Field("", description="Human-readable message")
 
 
-class UpdateSkillRoiResult(BaseModel):
-    """Result of updating a skill's ROI metadata."""
-
-    success: bool = Field(True, description="Whether ROI was updated")
-    message: str = Field("", description="Human-readable message")
-
-
 class EnhanceSkillResult(BaseModel):
     """Result of updating a skill with enhanced content."""
 
@@ -233,27 +223,47 @@ class ActivePipelinesResult(BaseModel):
     runs: list[ActivePipelineItem] = Field(default_factory=list)
 
 
-def materialize_skill_contents(skill_contents: dict[str, str]) -> str:
-    """Write skill_contents to a temp dir, return the path.
+# =============================================================================
+# Wisdom Curate (PCR Skill Networking)
+# =============================================================================
 
-    Creates {tmpdir}/{ref_path} for each entry so the orchestration's
-    reference paths resolve to real files on disk.
-    Temp dir is not auto-cleaned — OS handles it or caller can shutil.rmtree().
-    """
-    import tempfile
 
-    if not skill_contents:
-        return ""
-    tmpdir = Path(tempfile.mkdtemp(prefix="pcr-skills-")).resolve()
-    for ref_path, content in skill_contents.items():
-        if not ref_path or ref_path.startswith("/"):
-            continue
-        file_path = (tmpdir / ref_path).resolve()
-        if not file_path.is_relative_to(tmpdir):
-            continue
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(content, encoding="utf-8")
-    return str(tmpdir)
+class WisdomResultItem(BaseModel):
+    """Single wisdom item from curate results."""
+
+    wisdom_id: str = Field(description="Unique identifier of the wisdom record")
+    score: float = Field(description="Relevance score from the wisdom graph")
+    is_seed: bool = Field(default=False, description="Whether this wisdom is a seed node")
+
+
+class SkillRefItem(BaseModel):
+    """Reference to a curated skill file."""
+
+    name: str = Field(description="Skill name derived from the wisdom graph")
+    path: str = Field(description="Relative path to the skill file within the ZIP")
+    url: str = Field(default="", description="Pre-signed URL to download the skill ZIP")
+
+
+class WisdomCurateResult(BaseModel):
+    """Result from wisdom curate endpoint."""
+
+    session_id: str = Field(description="Session identifier for linking feedback")
+    query: str = Field(description="Original user query")
+    curation: str = Field(description="Markdown curation document with step-by-step workflow")
+    skills: list[SkillRefItem] = Field(default_factory=list, description="Curated skill references")
+    wisdoms: list[WisdomResultItem] = Field(
+        default_factory=list, description="Retrieved wisdom records with scores"
+    )
+    token_count: int = Field(default=0, description="Total LLM tokens consumed")
+    cost_usd: float = Field(default=0.0, description="Total LLM cost in USD")
+
+
+class WisdomFeedbackResult(BaseModel):
+    """Result from wisdom feedback endpoint."""
+
+    session_id: str = Field(description="Session identifier from the curate call")
+    feedback_id: str = Field(description="Unique identifier for the submitted feedback")
+    status: str = Field(default="saved", description="Feedback submission status")
 
 
 # Client Protocol
@@ -316,22 +326,11 @@ class MegaCodeBaseClient(Protocol):
 
     def get_active_pipelines(self) -> ActivePipelinesResult: ...
 
-    def update_skill_roi(
-        self,
-        *,
-        skill_name: str,
-        project_id: str,
-        roi: dict,
-    ) -> UpdateSkillRoiResult: ...
-
     def enhance_skill(
         self,
         *,
         skill_name: str,
-        project_id: str,
         skill_md: str,
         version: str,
-        parent_skill_name: str,
         metadata: dict | None = None,
-        run_id: str | None = None,
     ) -> EnhanceSkillResult: ...

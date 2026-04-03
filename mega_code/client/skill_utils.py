@@ -80,6 +80,8 @@ def _quote_skill_metadata_fields(frontmatter: dict) -> None:
                 continue
             for key in ("performance_increase", "token_savings"):
                 value = entry.get(key)
+                if isinstance(value, (int, float)):
+                    value = format_roi_percent(value)
                 if isinstance(value, str):
                     entry[key] = _QuotedString(value)
 
@@ -171,17 +173,7 @@ def _normalize_frontmatter_description(description: str) -> str:
 
 def format_frontmatter_percent(value: object) -> str:
     """Format ROI values for SKILL.md frontmatter display."""
-    if isinstance(value, str):
-        return value
-    if isinstance(value, (int, float)):
-        if -1 <= value < 0:
-            pct = 0
-        elif 0 <= value <= 1:
-            pct = value * 100
-        else:
-            pct = value
-        return f"{pct:.0f}%"
-    return "0%"
+    return format_roi_percent(value)
 
 
 def normalize_pending_skill_markdown(

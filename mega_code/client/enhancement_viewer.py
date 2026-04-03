@@ -18,10 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import signal
-import subprocess
 import sys
-import time
 import webbrowser
 from functools import partial
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -680,6 +677,12 @@ _VIEWER_HTML = r"""<!DOCTYPE html>
       box-shadow: 0 8px 24px rgba(119,160,255,0.16);
     }
     .submit-btn:hover { filter: brightness(0.98); }
+    .submit-btn:disabled {
+      opacity: 0.48;
+      cursor: default;
+      box-shadow: none;
+      filter: none;
+    }
     .submit-status {
       color: var(--accent);
       display: none;
@@ -747,7 +750,7 @@ _VIEWER_HTML = r"""<!DOCTYPE html>
           </div>
           <div class="nav-cluster">
             <span id="nav-counter" class="pill"></span>
-            <button class="submit-btn" onclick="submitFeedback()">Submit</button>
+            <button class="submit-btn" id="submit-btn" onclick="submitFeedback()" disabled>Submit</button>
             <span class="submit-status" id="submit-status"></span>
           </div>
         </div>
@@ -769,6 +772,7 @@ _VIEWER_HTML = r"""<!DOCTYPE html>
     const abOutputs = data.ab_outputs || [];
     const gradings = data.gradings || [];
     const previousData = data.previous || null;
+    const visitedCases = new Set(testCases.length > 0 ? [0] : []);
 
     document.getElementById('skill-title').textContent = data.skill_name || 'Unknown Skill';
     document.getElementById('iteration-text').textContent =
@@ -792,6 +796,7 @@ _VIEWER_HTML = r"""<!DOCTYPE html>
     function navigate(delta) {
       saveFeedbackState();
       currentIndex = Math.max(0, Math.min(testCases.length - 1, currentIndex + delta));
+      visitedCases.add(currentIndex);
       renderTestCase();
     }
 
@@ -958,6 +963,18 @@ _VIEWER_HTML = r"""<!DOCTYPE html>
       `;
     }
 
+    function updateSubmitState() {
+      const submitBtn = document.getElementById('submit-btn');
+      if (!submitBtn) return;
+      const allCasesVisited = testCases.length > 0 && visitedCases.size >= testCases.length;
+      const onLastCase = currentIndex === testCases.length - 1;
+      const canSubmit = allCasesVisited && onLastCase;
+      submitBtn.disabled = !canSubmit;
+      submitBtn.title = canSubmit
+        ? 'Submit the full review pass'
+        : 'Use Next to review every case before submitting';
+    }
+
     function renderTestCase() {
       const container = document.getElementById('test-case-content');
       if (testCases.length === 0) {
@@ -1064,6 +1081,7 @@ _VIEWER_HTML = r"""<!DOCTYPE html>
       document.getElementById('prev-btn').disabled = currentIndex === 0;
       document.getElementById('next-btn').disabled = currentIndex === testCases.length - 1;
       document.getElementById('progress-text').textContent = `Case ${currentIndex + 1} / ${testCases.length}`;
+      updateSubmitState();
       renderSummary();
     }
 
@@ -1114,6 +1132,10 @@ _VIEWER_HTML = r"""<!DOCTYPE html>
     }
 
     function submitFeedback() {
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn && submitBtn.disabled) {
+        return;
+      }
       saveFeedbackState();
       const reviews = [];
       for (let i = 0; i < testCases.length; i++) {
@@ -1212,31 +1234,6 @@ def generate_review_html(
 # ---------------------------------------------------------------------------
 
 
-def _kill_port(port: int) -> None:
-    """Kill any process listening on the given port."""
-    try:
-        result = subprocess.run(
-            ["lsof", "-ti", f":{port}"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        for pid_str in result.stdout.strip().split("\n"):
-            if pid_str.strip():
-                try:
-                    import os
-
-                    os.kill(int(pid_str.strip()), signal.SIGTERM)
-                except (ProcessLookupError, ValueError):
-                    pass
-        if result.stdout.strip():
-            time.sleep(0.5)
-    except subprocess.TimeoutExpired:
-        pass
-    except FileNotFoundError:
-        pass
-
-
 class ReviewHandler(BaseHTTPRequestHandler):
     """Serves the review HTML and handles feedback saves.
 
@@ -1329,8 +1326,9 @@ def start_review_server(
     iteration: int,
     previous_data: dict | None = None,
     port: int = 3117,
+    no_browser: bool = False,
 ) -> int:
-    """Start the review HTTP server and open in browser.
+    """Start the review HTTP server and optionally open in browser.
 
     Args:
         iteration_dir: Path to the iteration-N directory containing eval-full.json.
@@ -1338,6 +1336,7 @@ def start_review_server(
         iteration: Current iteration number.
         previous_data: Previous iteration's eval data (optional).
         port: Server port (default 3117). Falls back to auto-assign on conflict.
+        no_browser: If True, skip opening the browser automatically.
 
     Returns:
         The port the server is listening on.
@@ -1345,8 +1344,6 @@ def start_review_server(
     iter_path = Path(iteration_dir)
     eval_data_path = iter_path / "eval-full.json"
     feedback_path = iter_path / "feedback.json"
-
-    _kill_port(port)
 
     handler = partial(
         ReviewHandler,
@@ -1370,7 +1367,8 @@ def start_review_server(
     print(f"  Feedback:  {feedback_path}")
     print("\n  Press Ctrl+C to stop.\n")
 
-    webbrowser.open(url)
+    if not no_browser:
+        webbrowser.open(url)
 
     try:
         server.serve_forever()
@@ -1410,6 +1408,12 @@ def main() -> None:
         default=3117,
         help="Server port (default: 3117).",
     )
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        default=False,
+        help="Do not open the browser automatically.",
+    )
     args = parser.parse_args()
 
     iter_dir = args.iteration_dir.resolve()
@@ -1444,6 +1448,7 @@ def main() -> None:
         args.iteration,
         previous_data=previous_data,
         port=args.port,
+        no_browser=args.no_browser,
     )
 
 
