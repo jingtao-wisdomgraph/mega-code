@@ -27,9 +27,10 @@ from mega_code.client.api.protocol import (
     PipelineStopResult,
     ProfileResult,
     TriggerPipelineResult,
-    UpdateSkillRoiResult,
     UploadResult,
     UserProfile,
+    WisdomCurateResult,
+    WisdomFeedbackResult,
 )
 from mega_code.client.models import TurnSet
 from mega_code.client.utils.tracing import traced
@@ -320,50 +321,25 @@ class MegaCodeRemote:
         self._check_response(resp)
         return ActivePipelinesResult(**resp.json())
 
-    @traced("client.remote.update_skill_roi", kind="CLIENT", openinference_kind="TOOL")
-    def update_skill_roi(
-        self,
-        *,
-        skill_name: str,
-        project_id: str,
-        roi: dict,
-    ) -> UpdateSkillRoiResult:
-        """Update skill ROI via PATCH /api/megacode/v1/skills/{skill_name}/roi."""
-        self._set_current_span_attrs(skill_name=skill_name, project_id=project_id, roi=roi)
-        resp = self._client.patch(
-            f"/api/megacode/v1/skills/{_url_quote(skill_name, safe='')}/roi",
-            params={"project_id": project_id},
-            json=roi,
-        )
-        self._check_response(resp)
-        return UpdateSkillRoiResult(**resp.json())
-
     @traced("client.remote.enhance_skill", kind="CLIENT", openinference_kind="TOOL")
     def enhance_skill(
         self,
         *,
         skill_name: str,
-        project_id: str,
         skill_md: str,
         version: str,
-        parent_skill_name: str,
         metadata: dict | None = None,
-        run_id: str | None = None,
     ) -> EnhanceSkillResult:
         """Create a new skill version via POST /api/megacode/v1/skills/{skill_name}/enhance."""
-        self._set_current_span_attrs(skill_name=skill_name, project_id=project_id, version=version)
+        self._set_current_span_attrs(skill_name=skill_name, version=version)
         body: dict = {
             "skill_md": skill_md,
             "version": version,
-            "parent_skill_name": parent_skill_name,
         }
         if metadata:
             body["metadata"] = metadata
-        if run_id:
-            body["run_id"] = run_id
         resp = self._client.post(
             f"/api/megacode/v1/skills/{_url_quote(skill_name, safe='')}/enhance",
-            params={"project_id": project_id},
             json=body,
         )
         self._check_response(resp)
@@ -375,6 +351,55 @@ class MegaCodeRemote:
         resp = self._client.get("/api/megacode/v1/profile")
         self._check_response(resp)
         return UserProfile(**resp.json())
+
+    # -------------------------------------------------------------------------
+    # Wisdom Curate (PCR Skill Networking)
+    # -------------------------------------------------------------------------
+
+    @retry(
+        retry=retry_if_exception(_is_retryable),
+        wait=_wait_exponential_jitter,
+        stop=stop_after_attempt(_MAX_ATTEMPTS),
+        before_sleep=_log_retry,
+        reraise=True,
+    )
+    @traced("client.remote.wisdom_curate", kind="CLIENT", openinference_kind="TOOL")
+    def wisdom_curate(
+        self,
+        *,
+        query: str,
+        session_id: str = "",
+        top_k: int = 20,
+    ) -> WisdomCurateResult:
+        """Curate wisdom via POST /api/megacode/v1/wisdom/curate."""
+        self._set_current_span_attrs(query=query, session_id=session_id, top_k=top_k)
+        body: dict = {"query": query, "top_k": top_k}
+        if session_id:
+            body["session_id"] = session_id
+        resp = self._client.post("/api/megacode/v1/wisdom/curate", json=body)
+        self._check_response(resp)
+        return WisdomCurateResult(**resp.json())
+
+    @retry(
+        retry=retry_if_exception(_is_retryable),
+        wait=_wait_exponential_jitter,
+        stop=stop_after_attempt(_MAX_ATTEMPTS),
+        before_sleep=_log_retry,
+        reraise=True,
+    )
+    @traced("client.remote.wisdom_feedback", kind="CLIENT", openinference_kind="TOOL")
+    def wisdom_feedback(
+        self,
+        *,
+        session_id: str,
+        feedback_text: str,
+    ) -> WisdomFeedbackResult:
+        """Submit wisdom feedback via POST /api/megacode/v1/wisdom/feedback."""
+        self._set_current_span_attrs(session_id=session_id)
+        body = {"session_id": session_id, "feedback_text": feedback_text}
+        resp = self._client.post("/api/megacode/v1/wisdom/feedback", json=body)
+        self._check_response(resp)
+        return WisdomFeedbackResult(**resp.json())
 
     @property
     def server_url(self) -> str:

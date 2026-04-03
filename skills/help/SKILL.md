@@ -13,6 +13,7 @@ allowed-tools: Read
 | `/mega-code:login` | Sign in via GitHub or Google OAuth |
 | `/mega-code:wisdom-gen` | Run skill extraction pipeline |
 | `/mega-code:skill-enhance` | Evaluate and enhance a skill with A/B testing |
+| `/mega-code:wisdom-curate` | Curate a wisdom-backed workflow with skill installation |
 | `/mega-code:status` | Show pending items and status |
 | `/mega-code:stop` | Stop a running pipeline |
 | `/mega-code:profile` | View or update your developer profile |
@@ -24,6 +25,8 @@ allowed-tools: Read
 |------|------------------|-------------------|
 | Skills | `~/.local/share/mega-code/data/pending-skills/{name}/` | `.claude/skills/{name}/SKILL.md` |
 | Strategies | `~/.local/share/mega-code/data/pending-strategies/{name}.md` | `.claude/rules/mega-code/{name}.md` |
+| Curated Skills | — | `{data_dir}/skills/{name}/SKILL.md` |
+| Curations | `{data_dir}/curations/pending/{session_id}.json` | `{data_dir}/curations/completed/{session_id}.json` |
 
 ## Skill Structure
 
@@ -70,4 +73,6 @@ When no model is specified, the server selects the best model based on your conf
   - Use --project to analyze multiple sessions for stronger patterns
   - Skills with more evidence (from multiple sessions) are higher quality
   - Review and edit skills before installing for best results
+  - Run /mega-code:wisdom-curate <task description> to get a curated workflow with relevant skills
+  - Curated workflows can be executed immediately or saved for later resumption
   - For plugin updates, use `/plugin marketplace update mind-ai-mega-code`

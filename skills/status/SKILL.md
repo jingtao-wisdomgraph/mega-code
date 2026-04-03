@@ -11,7 +11,7 @@ Show current MEGA-Code status and pending items.
 ## Setup
 
 ```bash
-MEGA_DIR="${CLAUDE_PLUGIN_ROOT:-$(cat ~/.local/share/mega-code/plugin-root 2>/dev/null)}"
+MEGA_DIR="$(cd "${CLAUDE_SKILL_DIR}/../.." && pwd)"
 uv run --directory "$MEGA_DIR" python -m mega_code.client.check_auth
 ```
 

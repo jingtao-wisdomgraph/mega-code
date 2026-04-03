@@ -18,7 +18,6 @@ Usage::
 
     python -m mega_code.client.skill_enhance_aggregator \\
         --eval-data /path/to/eval-full.json \\
-        --skill-path /path/to/SKILL.md \\
         [--iteration-dir /path/to/iteration-N]
 """
 
@@ -85,11 +84,6 @@ def main() -> None:
         "--eval-data",
         required=True,
         help="Path to JSON file with full eval data (test_cases + ab_outputs + gradings).",
-    )
-    parser.add_argument(
-        "--skill-path",
-        required=True,
-        help="Path to the SKILL.md file being evaluated.",
     )
     parser.add_argument(
         "--iteration-dir",
